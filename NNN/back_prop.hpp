@@ -29,11 +29,11 @@ namespace nnn::back_prop {
 		d_activations[n_layers - 1] = NN_S(2) / NN_S(batch_sz) * (activations[n_layers - 1] - out);
 
 		for (uint64_t l = n_layers - 1; l > 0; --l) {
-			for (uint64_t i = 0; i < activations[l].cols(); ++i) {
+			for (int64_t i = 0; i < activations[l].cols(); ++i) {
 				NN_S a = activations[l](i);
 				NN_S da = d_activations[l](i);
 				d_biases[l - 1](i) += da * a * activation_der(layers[l].aft, a);
-				for (uint64_t j = 0; j < activations[l - 1].cols(); ++j) {
+				for (int64_t j = 0; j < activations[l - 1].cols(); ++j) {
 					NN_S pa = activations[l - 1](j);
 					NN_S w = weights[l - 1](j, i);
 					d_weights[l - 1](j, i) += da * a * activation_der(layers[l].aft, a) * pa;

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <iomanip>
+#include <random>
+#include <algorithm>
 
 #include "types.hpp"
 
@@ -34,8 +36,8 @@ namespace nnn {
 
 		void initialize(NN_S from, NN_S to) {
 			for (uint64_t l = 0; l < _desc.layers.size() - 1; ++l) {
-				for (uint64_t j = 0; j < _weights[l].cols(); ++j) {
-					for (uint64_t i = 0; i < _weights[l].rows(); ++i) {
+				for (int64_t j = 0; j < _weights[l].cols(); ++j) {
+					for (int64_t i = 0; i < _weights[l].rows(); ++i) {
 						_weights[l](i,j) = from + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (to - from)));
 					}
 					_biases[l](j) = from + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (to - from)));
@@ -63,25 +65,67 @@ namespace nnn {
 				_d_activations[i].setZero();
 			}
 
+			NN_S curLoss, prev, eps;
+
 			switch (_desc.bpt)
 			{
 			case BackPropagationMethod::REGULAR:
 				back_prop::regular<NN_S, NN_OUT>(layers, out, batch_sz, learn_rate, _weights, _biases, _activations, _d_weights, _d_biases, _d_activations);
 				break;
+			case BackPropagationMethod::FINDIFF:
+				curLoss = computeLoss(out);
+				eps = NN_S(1e-3);
+				for (uint64_t l = 0; l < sz - 1; ++l) {
+					for (int64_t i = 0; i < _weights[l].rows(); ++i) {
+						for (int64_t j = 0; j < _weights[l].cols(); ++j) {
+							prev = _weights[l](i, j);
+							_weights[l](i, j) += eps;
+							forward();
+							_d_weights[l](i, j) = (computeLoss(out) - curLoss) / eps;
+							_weights[l](i, j) = prev;
+						}
+					}
+
+					for (int64_t i = 0; i < _biases[l].cols(); ++i) {
+						prev = _biases[l](i);
+						_biases[l](i) += eps;
+						forward();
+						auto tmp = computeLoss(out) - curLoss;
+						_d_biases[l](i) = (computeLoss(out) - curLoss) / eps;
+						_biases[l](i) = prev;
+					}
+				}
+				for (uint64_t l = 0; l < sz - 1; ++l) {
+					_weights[l] -= learn_rate * _d_weights[l];
+					_biases[l] -= learn_rate * _d_biases[l];
+				}
+
 			default:
 				break;
 			}
 		}
 
-		void train(const NNDataset<NN_S, NN_IN, NN_OUT>& dataset, uint64_t n_epochs, uint64_t batch_sz, NN_S learn_rate, bool stohastic = false) {
+		void train(const NNDataset<NN_S, NN_IN, NN_OUT>& dataset, uint64_t n_epochs, uint64_t batch_sz, NN_S learn_rate, bool stochastic = false) {
+
 			uint64_t sz = dataset.ins.size();
-			uint64_t n_batches = ceil(sz / batch_sz);
+
+			std::vector<int> indices;
+			indices.resize(sz);
+			for (int i = 0; i < sz; ++i)
+				indices[i] = i;
+			if (stochastic) {
+				std::random_device rd;
+				std::mt19937 g(rd());
+				std::shuffle(indices.begin(), indices.end(), g);
+			}
+
+			uint64_t n_batches = uint64_t(ceil(sz / batch_sz));
 			std::vector<SampleOut<NN_S, NN_OUT>> outBatch(batch_sz);
 			for (uint64_t e = 0; e < n_epochs; ++e) {
 				NN_S loss = 0;
 				for (uint64_t b = 0; b < n_batches; ++b) {
 					for (uint64_t s = 0; s < batch_sz; ++s) {
-						uint64_t r = batch_sz * b + s;
+						uint64_t r = indices[(batch_sz * b + s) % sz];
 						auto sample = dataset.ins[r];
 						outBatch[s] = dataset.outs[r];
 						forward(sample);
@@ -90,7 +134,9 @@ namespace nnn {
 					}
 				}
 				loss /= NN_S(batch_sz * n_batches);
-				std::cout << "epoch " << e << "/" << n_epochs << " loss: " << loss << "\n";
+				if (e % 10 == 0) {
+					std::cout << "epoch " << e << "/" << n_epochs << " loss: " << loss << "\n";
+				}
 			}
 		}
 
@@ -111,8 +157,10 @@ namespace nnn {
 		NN_S loss(const Sample<NN_S>& input) {
 			switch (_desc.lft)
 			{
-			case LossFunctionType::SQUARE:
-				return loss::square(input);
+			case LossFunctionType::L1:
+				return loss::l1(input);
+			case LossFunctionType::L2:
+				return loss::l2(input);
 			default:
 				break;
 			}
@@ -123,8 +171,9 @@ namespace nnn {
 			return loss(getResult() - output);
 		}
 
-		void forward(const SampleIn<NN_S, NN_IN>& input) {
-			_activations[0] = input;
+		void forward(const SampleIn<NN_S, NN_IN>& input = {}) {
+			if (input.cols())
+				_activations[0] = input;
 			for (uint64_t i = 0; i < _weights.size(); ++i) {
 				_activations[i + 1] = _activations[i] * _weights[i] + _biases[i];
 				activation(_desc.layers[i + 1].aft, _activations[i + 1]);

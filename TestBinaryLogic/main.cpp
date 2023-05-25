@@ -53,11 +53,11 @@ int main()
 	NNDesc desc{
 		{
 			{2, ActivationFunctionType::NONE}, 
-			{2, ActivationFunctionType::SIGMOID},
+			{2, ActivationFunctionType::SIGMOID}, // this layer is only needed for xor
 			{1, ActivationFunctionType::SIGMOID}
 		}, 
 		BackPropagationMethod::REGULAR,
-		LossFunctionType::SQUARE
+		LossFunctionType::L2
 	};
 
 	NNDataset<float, 2, 1>& dataset = op_xor;
@@ -70,7 +70,7 @@ int main()
 
 	std::cout << "training...\n";
 
-	nn.train(dataset, 1000, 4, 10.0f, true);
+	nn.train(dataset, 1000, 4, 10.0f);
 
 	nn.test(dataset);
 

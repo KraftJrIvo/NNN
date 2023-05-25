@@ -10,7 +10,7 @@ namespace nnn::activation {
 	}
 	template<typename NN_S>
 	NN_S sigmoid_der(NN_S a) {
-		return 1.0 - a;
+		return NN_S(1.0) - a;
 	}
 
 	template<typename Derived>
@@ -19,7 +19,7 @@ namespace nnn::activation {
 	}
 	template<typename NN_S>
 	NN_S relu_der(NN_S a) {
-		return (a > 0) ? 1.0 : 0.0;
+		return (a > 0) ? NN_S(1.0) : NN_S(0.0);
 	}
 
 }

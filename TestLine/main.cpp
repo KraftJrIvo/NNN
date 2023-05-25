@@ -34,7 +34,7 @@ int main()
 			{1, ActivationFunctionType::NONE}
 		},
 		BackPropagationMethod::REGULAR,
-		LossFunctionType::SQUARE
+		LossFunctionType::L2
 	};
 
 	NeuralNet<float, 1, 1> nn(desc);
@@ -45,7 +45,7 @@ int main()
 
 	std::cout << "training...\n";
 
-	nn.train(line, 100, 8, 1.0f);
+	nn.train(line, 1000, 8, 0.00005f, true);
 
 	nn.test(line);
 

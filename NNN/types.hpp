@@ -19,7 +19,8 @@ namespace nnn {
 	};
 
 	enum class LossFunctionType {
-		SQUARE
+		L1,
+		L2
 	};
 
 	struct NNLayerDesc {
