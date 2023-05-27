@@ -137,7 +137,7 @@
   <ItemGroup>
     <ClInclude Include="act_funcs.hpp" />
     <ClInclude Include="back_prop.hpp" />
-    <ClInclude Include="Drawer.h" />
+    <ClInclude Include="Drawer.hpp" />
     <ClInclude Include="loss_funcs.hpp" />
     <ClInclude Include="NeuralNet.hpp" />
     <ClInclude Include="types.hpp" />

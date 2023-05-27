@@ -1,5 +1,6 @@
 #include <iostream>
 #include "..\NNN\NeuralNet.hpp"
+#include "..\NNN\Drawer.hpp"
 
 using namespace nnn;
 
@@ -39,17 +40,28 @@ int main()
 
 	NeuralNet<float, 1, 1> nn(desc);
 
-	nn.initialize(0.0f, 1.0f);
+	Drawer<float, 1, 1> d(512, nn, nullptr);
 
-	nn.test(line);
+	while (true) {
+		//srand(0);
+		nn.restart = false;
+		nn.initialize(0.0f, 1.0f);
 
-	std::cout << "training...\n";
+		nn.test(line);
 
-	nn.train(line, 1000, 8, 0.00005f, true);
+		std::cout << "training...\n";
 
-	nn.test(line);
+		nn.train(line, 1000, 8, 0.000005f, false, 33);
 
-	std::cout << "done.\n";
+		if (nn.restart)
+			continue;
 
-	system("pause");
+		nn.test(line);
+
+		std::cout << "done.\n";
+
+		system("pause");
+		if (nn.restart)
+			continue;
+	}
 }

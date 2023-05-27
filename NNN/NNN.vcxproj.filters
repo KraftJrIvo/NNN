@@ -27,7 +27,7 @@
     <ClInclude Include="back_prop.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Drawer.h">
+    <ClInclude Include="Drawer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="loss_funcs.hpp">

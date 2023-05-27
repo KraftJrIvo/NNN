@@ -10,12 +10,19 @@
 #include "loss_funcs.hpp"
 #include "back_prop.hpp"
 
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+
 namespace nnn {
+	template<typename NN_S, int NN_IN, int NN_OUT>
+	class Drawer;
 
 	template<typename NN_S, int NN_IN, int NN_OUT>
 	class NeuralNet
 	{
+	template<typename, int, int> friend class Drawer;
 	public:
+		bool restart = false;
 		uint64_t inSz = 0, outSz = 0, maxSz = 0;
 
 		NeuralNet(const NNDesc& desc) :
@@ -72,40 +79,12 @@ namespace nnn {
 			case BackPropagationMethod::REGULAR:
 				back_prop::regular<NN_S, NN_OUT>(layers, out, batch_sz, learn_rate, _weights, _biases, _activations, _d_weights, _d_biases, _d_activations);
 				break;
-			case BackPropagationMethod::FINDIFF:
-				curLoss = computeLoss(out);
-				eps = NN_S(1e-3);
-				for (uint64_t l = 0; l < sz - 1; ++l) {
-					for (int64_t i = 0; i < _weights[l].rows(); ++i) {
-						for (int64_t j = 0; j < _weights[l].cols(); ++j) {
-							prev = _weights[l](i, j);
-							_weights[l](i, j) += eps;
-							forward();
-							_d_weights[l](i, j) = (computeLoss(out) - curLoss) / eps;
-							_weights[l](i, j) = prev;
-						}
-					}
-
-					for (int64_t i = 0; i < _biases[l].cols(); ++i) {
-						prev = _biases[l](i);
-						_biases[l](i) += eps;
-						forward();
-						auto tmp = computeLoss(out) - curLoss;
-						_d_biases[l](i) = (computeLoss(out) - curLoss) / eps;
-						_biases[l](i) = prev;
-					}
-				}
-				for (uint64_t l = 0; l < sz - 1; ++l) {
-					_weights[l] -= learn_rate * _d_weights[l];
-					_biases[l] -= learn_rate * _d_biases[l];
-				}
-
 			default:
 				break;
 			}
 		}
 
-		void train(const NNDataset<NN_S, NN_IN, NN_OUT>& dataset, uint64_t n_epochs, uint64_t batch_sz, NN_S learn_rate, bool stochastic = false) {
+		void train(const NNDataset<NN_S, NN_IN, NN_OUT>& dataset, uint64_t n_epochs, uint64_t batch_sz, NN_S learn_rate, bool stochastic = false, uint32_t holdback_ms = 0) {
 
 			uint64_t sz = dataset.ins.size();
 
@@ -113,30 +92,34 @@ namespace nnn {
 			indices.resize(sz);
 			for (int i = 0; i < sz; ++i)
 				indices[i] = i;
-			if (stochastic) {
-				std::random_device rd;
-				std::mt19937 g(rd());
-				std::shuffle(indices.begin(), indices.end(), g);
-			}
 
 			uint64_t n_batches = uint64_t(ceil(sz / batch_sz));
-			std::vector<SampleOut<NN_S, NN_OUT>> outBatch(batch_sz);
 			for (uint64_t e = 0; e < n_epochs; ++e) {
 				NN_S loss = 0;
 				for (uint64_t b = 0; b < n_batches; ++b) {
+					if (stochastic) {
+						std::random_device rd;
+						std::mt19937 g(rd());
+						std::shuffle(indices.begin(), indices.end(), g);
+					}
 					for (uint64_t s = 0; s < batch_sz; ++s) {
 						uint64_t r = indices[(batch_sz * b + s) % sz];
 						auto sample = dataset.ins[r];
-						outBatch[s] = dataset.outs[r];
 						forward(sample);
 						loss += computeLoss(dataset.outs[r]);
 						backPropAndLearn(_desc.layers, dataset.outs[r], batch_sz, learn_rate);
 					}
+					if (restart) break;
 				}
 				loss /= NN_S(batch_sz * n_batches);
 				if (e % 10 == 0) {
 					std::cout << "epoch " << e << "/" << n_epochs << " loss: " << loss << "\n";
 				}
+				_lastEpoch = e;
+				if (holdback_ms) {
+					std::this_thread::sleep_for(std::chrono::milliseconds(holdback_ms));
+				}
+				if (restart) break;
 			}
 		}
 
@@ -168,7 +151,8 @@ namespace nnn {
 		}
 
 		NN_S computeLoss(const SampleOut<NN_S, NN_OUT>& output) {
-			return loss(getResult() - output);
+			_lastLoss = loss(getResult() - output);
+			return _lastLoss;
 		}
 
 		void forward(const SampleIn<NN_S, NN_IN>& input = {}) {
@@ -196,6 +180,14 @@ namespace nnn {
 		SampleOut<NN_S, NN_OUT> getResult() {
 			return _activations[_activations.size() - 1];
 		}
+
+		float getCurrentLoss() {
+			return _lastLoss;
+		}
+
+		float getCurrentEpoch() {
+			return _lastEpoch;
+		}
 		 
 	private:
 		NNDesc _desc;
@@ -205,6 +197,9 @@ namespace nnn {
 		std::vector<Layer<NN_S>> _d_weights;
 		std::vector<Sample<NN_S>> _d_biases;
 		std::vector<Sample<NN_S>> _d_activations;
+
+		float _lastLoss = 0.0f;
+		uint64_t _lastEpoch = 0;
 	};
 
 }

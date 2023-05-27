@@ -13,9 +13,7 @@ namespace nnn {
 	};
 
 	enum class BackPropagationMethod {
-		REGULAR,
-		FINDIFF,
-		FAST
+		REGULAR
 	};
 
 	enum class LossFunctionType {
