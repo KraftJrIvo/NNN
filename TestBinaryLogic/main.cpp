@@ -147,7 +147,7 @@ int main()
 			{2, ActivationFunctionType::SIGMOID},
 			{1, ActivationFunctionType::SIGMOID}
 		}, 
-		BackPropagationMethod::ADAPTIVE,
+		OptimizerType::SIMPLE,
 		LossFunctionType::L2
 	};
 
@@ -155,8 +155,8 @@ int main()
 
 	Drawer<float, 3, 1> d(512, nn, std::make_shared<SpecificDrawerLogic>());
 
+	srand(0);
 	while (true) {
-		//srand(0);
 		nn.restart = false;
 		nn.initialize(0.0f, 1.0f);
 

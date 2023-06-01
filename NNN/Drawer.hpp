@@ -13,6 +13,7 @@ namespace nnn {
 	template<typename NN_S, int NN_IN, int NN_OUT>
 	class SpecificsDrawer {
 	public:
+		bool paused = false;
 		virtual void drawSpecifics(cv::Mat img, NeuralNet<NN_S, NN_IN, NN_OUT>& nn, int mx, int my, bool lmb) = 0;
 		std::vector<Layer<NN_S>>& getWeights(NeuralNet<NN_S, NN_IN, NN_OUT>& nn) { return nn._weights; }
 		std::vector<Sample<NN_S>>& getBiases(NeuralNet<NN_S, NN_IN, NN_OUT>& nn) { return nn._biases; }
@@ -103,7 +104,7 @@ namespace nnn {
 				_lastEpoch = e;
 			}
 			_drawNeurons(_img({ _side, 0, _side, _side}));
-			if (_sd) {
+			if (_sd && !_sd->paused) {
 				_sd->drawSpecifics(_img({ 2 * _side, 0, _side, _side }), _nn, _mouse.x - 2 * _side, _mouse.y, lmb);
 			}
 

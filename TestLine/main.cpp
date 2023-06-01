@@ -78,7 +78,7 @@ int main()
 			{1, ActivationFunctionType::NONE},
 			{1, ActivationFunctionType::NONE}
 		},
-		BackPropagationMethod::REGULAR,
+		OptimizerType::ADAM,
 		LossFunctionType::L2
 	};
 
@@ -86,6 +86,7 @@ int main()
 
 	Drawer<float, 1, 1> d(512, nn, std::make_shared<SpecificDrawerLine>());
 
+	srand(0);
 	while (true) {
 		NNDataset<float, 1, 1> line = {
 			{
@@ -110,7 +111,6 @@ int main()
 			}
 		};
 
-		//srand(0);
 		nn.restart = false;
 		nn.initialize(0.0f, 1.0f);
 
@@ -118,7 +118,7 @@ int main()
 
 		std::cout << "training...\n";
 
-		nn.train(line, 1000, 8, 0.5f, false, 1);
+		nn.train(line, 5000, 8, 0.01f, true, 1);
 
 		if (nn.restart)
 			continue;

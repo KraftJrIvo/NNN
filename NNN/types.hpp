@@ -12,9 +12,9 @@ namespace nnn {
 		RELU
 	};
 
-	enum class BackPropagationMethod {
-		REGULAR,
-		ADAPTIVE
+	enum class OptimizerType {
+		SIMPLE,
+		ADAM
 	};
 
 	enum class LossFunctionType {
@@ -30,7 +30,7 @@ namespace nnn {
 	typedef std::vector<NNLayerDesc> NNLayerDescs;
 	struct NNDesc {
 		NNLayerDescs layers;
-		BackPropagationMethod bpt;
+		OptimizerType opt;
 		LossFunctionType lft;
 	};
 
@@ -54,6 +54,12 @@ namespace nnn {
 				ins[i] = SampleIn<NN_S, NN_IN>(ins_[i].data());
 				outs[i] = SampleOut<NN_S, NN_OUT>(outs_[i].data());
 			}
+		}
+		NNDataset(const std::vector<SampleIn<NN_S, NN_IN>>& ins_, const std::vector<SampleOut<NN_S, NN_OUT>>& outs_) :
+			ins(ins_),
+			outs(outs_)
+		{
+			auto sz = ins.size();
 		}
 	};
 

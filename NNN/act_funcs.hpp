@@ -15,11 +15,11 @@ namespace nnn::activation {
 
 	template<typename Derived>
 	void relu(Eigen::MatrixBase<Derived>& x) {
-		x = x.cwiseMax(0);
+		x = x.cwiseMax(0.0001f);
 	}
 	template<typename NN_S>
 	NN_S relu_der(NN_S a) {
-		return (a > 0) ? NN_S(1.0) : NN_S(0.0);
+		return (a > 0) ? NN_S(1.0) : NN_S(0.0001f);
 	}
 
 }

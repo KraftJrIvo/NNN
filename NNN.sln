@@ -15,6 +15,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestLine", "TestLine\TestLi
 		{9610ECBF-8316-4012-99A5-5C48E0CE483A} = {9610ECBF-8316-4012-99A5-5C48E0CE483A}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestImagesTransition", "TestImagesTransition\TestImagesTransition.vcxproj", "{3C4FC579-DFA9-4127-8652-514066AE9CDB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9610ECBF-8316-4012-99A5-5C48E0CE483A} = {9610ECBF-8316-4012-99A5-5C48E0CE483A}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -47,6 +52,14 @@ Global
 		{CE6AA066-C0BF-4439-A7E9-95A00B8B8C00}.Release|x64.Build.0 = Release|x64
 		{CE6AA066-C0BF-4439-A7E9-95A00B8B8C00}.Release|x86.ActiveCfg = Release|Win32
 		{CE6AA066-C0BF-4439-A7E9-95A00B8B8C00}.Release|x86.Build.0 = Release|Win32
+		{3C4FC579-DFA9-4127-8652-514066AE9CDB}.Debug|x64.ActiveCfg = Debug|x64
+		{3C4FC579-DFA9-4127-8652-514066AE9CDB}.Debug|x64.Build.0 = Debug|x64
+		{3C4FC579-DFA9-4127-8652-514066AE9CDB}.Debug|x86.ActiveCfg = Debug|Win32
+		{3C4FC579-DFA9-4127-8652-514066AE9CDB}.Debug|x86.Build.0 = Debug|Win32
+		{3C4FC579-DFA9-4127-8652-514066AE9CDB}.Release|x64.ActiveCfg = Release|x64
+		{3C4FC579-DFA9-4127-8652-514066AE9CDB}.Release|x64.Build.0 = Release|x64
+		{3C4FC579-DFA9-4127-8652-514066AE9CDB}.Release|x86.ActiveCfg = Release|Win32
+		{3C4FC579-DFA9-4127-8652-514066AE9CDB}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

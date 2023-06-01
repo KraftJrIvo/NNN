@@ -8,7 +8,6 @@
 
 #include "act_funcs.hpp"
 #include "loss_funcs.hpp"
-#include "back_prop.hpp"
 
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
@@ -51,6 +50,18 @@ namespace nnn {
 				_d_biases[i - 1].resize(1, _desc.layers[i].sz);
 				_d_activations[i].resize(1, _desc.layers[i].sz);
 			}
+			if (_desc.opt == OptimizerType::ADAM) {
+				_adam_m_weights.resize(sz - 1);
+				_adam_m_biases.resize(sz - 1);
+				_adam_v_weights.resize(sz - 1);
+				_adam_v_biases.resize(sz - 1);
+				for (uint64_t i = 1; i < sz; ++i) {
+					_adam_m_weights[i - 1].resize(_desc.layers[i - 1].sz, _desc.layers[i].sz);
+					_adam_m_biases[i - 1].resize(1, _desc.layers[i].sz);
+					_adam_v_weights[i - 1].resize(_desc.layers[i - 1].sz, _desc.layers[i].sz);
+					_adam_v_biases[i - 1].resize(1, _desc.layers[i].sz);
+				}
+			}
 			resetGrad();
 		}
 
@@ -65,16 +76,23 @@ namespace nnn {
 			}
 		}
 
-		void backProp(const NNLayerDescs& layers, const SampleOut<NN_S, NN_OUT>& out, uint64_t batch_sz, float curLossCoeff) {
-			switch (_desc.bpt)
-			{
-			case BackPropagationMethod::REGULAR:
-				back_prop::regular<NN_S, NN_OUT>(layers, out, batch_sz, _weights, _biases, _activations, _d_weights, _d_biases, _d_activations);
-				break;
-			case BackPropagationMethod::ADAPTIVE:
-				back_prop::adaptive<NN_S, NN_OUT>(layers, out, batch_sz, curLossCoeff, _weights, _biases, _activations, _d_weights, _d_biases, _d_activations);
-			default:
-				break;
+		void backProp(const SampleOut<NN_S, NN_OUT>& out, uint64_t batch_sz) {
+
+			auto n_layers = _activations.size();
+			_d_activations[n_layers - 1] = NN_S(2) / NN_S(batch_sz) * (_activations[n_layers - 1] - out);
+
+			for (uint64_t l = n_layers - 1; l > 0; --l) {
+				for (int64_t i = 0; i < _activations[l].cols(); ++i) {
+					NN_S a = _activations[l](i);
+					NN_S da = _d_activations[l](i);
+					_d_biases[l - 1](i) += da * a * activation_der(_desc.layers[l].aft, a);
+					for (int64_t j = 0; j < _activations[l - 1].cols(); ++j) {
+						NN_S pa = _activations[l - 1](j);
+						NN_S w = _weights[l - 1](j, i);
+						_d_weights[l - 1](j, i) += da * a * activation_der(_desc.layers[l].aft, a) * pa;
+						_d_activations[l - 1](j) += da * a * activation_der(_desc.layers[l].aft, a) * w;
+					}
+				}
 			}
 		}
 
@@ -84,7 +102,17 @@ namespace nnn {
 			for (uint64_t i = 1; i < sz; ++i) {
 				_d_weights[i - 1].setZero();
 				_d_biases[i - 1].setZero();
-				_d_activations[i].setZero();
+				_d_activations[i].setZero();				
+			}
+		}
+
+		void resetAdam() {
+			auto sz = _desc.layers.size();
+			for (uint64_t i = 0; i < sz - 1; ++i) {
+				_adam_m_weights[i].setZero();
+				_adam_v_weights[i].setZero();
+				_adam_m_biases[i].setZero();
+				_adam_v_biases[i].setZero();
 			}
 		}
 
@@ -94,10 +122,34 @@ namespace nnn {
 				_weights[l] -= learn_rate * _d_weights[l];
 				_biases[l] -= learn_rate * _d_biases[l];
 			}
-			resetGrad();
+		}
+
+		void learnAdam(NN_S learn_rate) {
+			
+			NN_S b1 = 0.9f, b2 = 0.999f, eps = 1e-08f;
+
+			int64_t sz = _desc.layers.size();
+			for (int64_t l = 0; l < sz - 1; ++l) {
+				for (int64_t j = 0; j < _weights[l].cols(); ++j) {
+					_adam_m_biases[l](j) = b1 * _adam_m_biases[l](j) + (1.0f - b1) * _d_biases[l](j);
+					_adam_v_biases[l](j) = b2 * _adam_v_biases[l](j) + (1.0f - b2) * _d_biases[l](j) * _d_biases[l](j);
+					for (int64_t i = 0; i < _weights[l].rows(); ++i) {
+						_adam_m_weights[l](i, j) = b1 * _adam_m_weights[l](i, j) + (1.0f - b1) * _d_weights[l](i, j);
+						_adam_v_weights[l](i, j) = b2 * _adam_v_weights[l](i, j) + (1.0f - b2) * _d_weights[l](i, j) * _d_weights[l](i, j);
+					}
+					_biases[l](j) -= learn_rate * (_adam_m_biases[l](j) / (1.0f - b1)) / (sqrt(_adam_v_biases[l](j) / (1.0f - b2)) + eps);
+					for (int64_t i = 0; i < _weights[l].rows(); ++i) {
+						_weights[l](i, j) -= learn_rate * (_adam_m_weights[l](i, j) / (1.0f - b1)) / (sqrt(_adam_v_weights[l](i, j) / (1.0f - b2)) + eps);
+					}
+				}
+			}
 		}
 
 		void train(const NNDataset<NN_S, NN_IN, NN_OUT>& dataset, uint64_t n_epochs, uint64_t batch_sz, NN_S learn_rate, bool stochastic = false, uint32_t holdback_ms = 0) {
+			
+			if (_desc.opt == OptimizerType::ADAM) {
+				resetAdam();
+			}
 
 			uint64_t sz = dataset.ins.size();
 
@@ -113,7 +165,7 @@ namespace nnn {
 					std::mt19937 g(rd());
 					std::shuffle(indices.begin(), indices.end(), g);
 				}
-				NN_S maxLoss = -INFINITY;
+				NN_S maxLoss = NN_S(1e-10);
 				for (uint64_t b = 0; b < n_batches; ++b) {
 					for (uint64_t s = 0; s < batch_sz; ++s) {
 						uint64_t r = indices[(batch_sz * b + s) % sz];
@@ -124,11 +176,15 @@ namespace nnn {
 						curLoss = computeLoss(dataset.outs[r]);
 						maxLoss = std::max(maxLoss, curLoss);
 						loss += curLoss;
-						backProp(_desc.layers, dataset.outs[r], batch_sz, curLoss / maxLoss);
+						backProp(dataset.outs[r], batch_sz);
 						unlock();
 					}
 					if (restart) break;
-					learn(learn_rate);
+					if (_desc.opt == OptimizerType::ADAM)
+						learnAdam(learn_rate);
+					else
+						learn(learn_rate);
+					resetGrad();
 				}
 				loss /= NN_S(batch_sz * n_batches);
 				if (e % 10 == 0) {
@@ -155,6 +211,18 @@ namespace nnn {
 			default:
 				input = input.array().abs();
 				break;
+			}
+		}
+
+		NN_S activation_der(ActivationFunctionType aft, NN_S a) {
+			switch (aft)
+			{
+			case ActivationFunctionType::SIGMOID:
+				return activation::sigmoid_der(a);
+			case ActivationFunctionType::RELU:
+				return activation::relu_der(a);
+			default:
+				return 1;
 			}
 		}
 
@@ -228,6 +296,11 @@ namespace nnn {
 		std::vector<Layer<NN_S>> _d_weights;
 		std::vector<Sample<NN_S>> _d_biases;
 		std::vector<Sample<NN_S>> _d_activations;
+
+		std::vector<Layer<NN_S>> _adam_m_weights;
+		std::vector<Sample<NN_S>> _adam_m_biases;
+		std::vector<Layer<NN_S>> _adam_v_weights;
+		std::vector<Sample<NN_S>> _adam_v_biases;
 
 		std::mutex _forward_lock;
 
