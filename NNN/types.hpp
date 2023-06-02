@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <fstream>
 
 #include <Eigen/Core>
 
@@ -32,6 +33,24 @@ namespace nnn {
 		NNLayerDescs layers;
 		OptimizerType opt;
 		LossFunctionType lft;
+		void save(std::ofstream& out) {
+			size_t sz = layers.size(); out.write(reinterpret_cast<const char*>(&sz), sizeof(size_t));
+			for (auto& l : layers) {
+				out.write(reinterpret_cast<const char*>(&l.sz), sizeof(uint64_t));
+				out.write(reinterpret_cast<const char*>(&l.aft), sizeof(ActivationFunctionType));
+			}
+			out.write(reinterpret_cast<const char*>(&opt), sizeof(OptimizerType));
+			out.write(reinterpret_cast<const char*>(&lft), sizeof(LossFunctionType));
+		}
+		void load(std::ifstream& in) {
+			size_t sz; in.read(reinterpret_cast<char*>(&sz), sizeof(size_t)); layers.resize(sz);
+			for (auto& l : layers) {
+				in.read(reinterpret_cast<char*>(&l.sz), sizeof(uint64_t));
+				in.read(reinterpret_cast<char*>(&l.aft), sizeof(ActivationFunctionType));
+			}
+			in.read(reinterpret_cast<char*>(&opt), sizeof(OptimizerType));
+			in.read(reinterpret_cast<char*>(&lft), sizeof(LossFunctionType));
+		}
 	};
 
 	template<typename NN_S, int NN_IN>

@@ -27,9 +27,43 @@ namespace nnn {
 		bool restart = false;
 		uint64_t inSz = 0, outSz = 0, maxSz = 0;
 
-		NeuralNet(const NNDesc& desc) :
-			_desc(desc)
-		{
+		NeuralNet(const NNDesc& desc) {
+			create(desc);
+		}
+
+		NeuralNet(const std::string& filePath) {
+			load(filePath);
+		}
+
+		void load(const std::string& filePath) {
+			std::ifstream in(filePath, std::ios::binary);
+			NNDesc desc; desc.load(in);
+			create(desc);
+			for (int64_t l = 0; l < _desc.layers.size() - 1; ++l) {
+				for (int64_t j = 0; j < _biases[l].cols(); ++j) {
+					in.read(reinterpret_cast<char*>(&_biases[l](j)), sizeof(NN_S));
+					for (int64_t i = 0; i < _weights[l].rows(); ++i) {
+						in.read(reinterpret_cast<char*>(&_weights[l](i, j)), sizeof(NN_S));
+					}
+				}
+			}
+		}
+
+		void save(const std::string& filePath) {
+			std::ofstream out(filePath, std::ios::binary);
+			_desc.save(out);
+			for (int64_t l = 0; l < _desc.layers.size() - 1; ++l) {
+				for (int64_t j = 0; j < _biases[l].cols(); ++j) {
+					out.write(reinterpret_cast<const char*>(&_biases[l](j)), sizeof(NN_S));
+					for (int64_t i = 0; i < _weights[l].rows(); ++i) {
+						out.write(reinterpret_cast<const char*>(&_weights[l](i, j)), sizeof(NN_S));
+					}
+				}
+			}
+		}
+
+		void create(const NNDesc& desc) {
+			_desc = desc;
 			auto sz = _desc.layers.size();
 			_weights.resize(sz - 1);
 			_biases.resize(sz - 1);
