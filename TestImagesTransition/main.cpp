@@ -120,12 +120,13 @@ void make_video(NeuralNet<float, 3, 1>& nn, size_t nimages, int side, int frames
 
 int main()
 {
-	std::vector<std::string> imagePaths = { "A.png", "B.png"};
+	std::vector<std::string> imagePaths = { "cat.png", "dog.png"};
 	auto dataset = make_dataset(imagePaths);
 
 	NNDesc desc{
 		{
 			{3, ActivationFunctionType::NONE},
+			{IMAGE_SIDE, ActivationFunctionType::SIGMOID},
 			{IMAGE_SIDE, ActivationFunctionType::SIGMOID},
 			{IMAGE_SIDE / 2, ActivationFunctionType::SIGMOID},
 			{1, ActivationFunctionType::SIGMOID}

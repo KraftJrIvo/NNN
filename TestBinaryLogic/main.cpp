@@ -144,7 +144,7 @@ int main()
 		{
 			{3, ActivationFunctionType::NONE}, 
 			{3, ActivationFunctionType::SIGMOID},
-			{2, ActivationFunctionType::SIGMOID},
+			//{2, ActivationFunctionType::SIGMOID},
 			{1, ActivationFunctionType::SIGMOID}
 		}, 
 		OptimizerType::SIMPLE,
