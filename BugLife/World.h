@@ -4,7 +4,10 @@
 
 namespace buglife {
 
+	class Drawer;
+
 	class World {
+	friend class Drawer;
 	public:
 		cv::Size2i size;
 
@@ -12,8 +15,12 @@ namespace buglife {
 			size(size)
 		{ }
 
+		void generate();
+		void update();
+
 	private:
-		std::set<Object> _objects;
+		double _startTime = 0;
+		std::vector<Object> _objects;
 	};
 
 }

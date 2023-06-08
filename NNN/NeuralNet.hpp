@@ -27,6 +27,12 @@ namespace nnn {
 		bool restart = false;
 		uint64_t inSz = 0, outSz = 0, maxSz = 0;
 
+		NeuralNet(const NeuralNet<NN_S, NN_IN, NN_OUT>& nn) {
+			create(nn._desc);
+			_weights = nn._weights;
+			_biases = nn._biases;
+		}
+
 		NeuralNet(const NNDesc& desc) {
 			create(desc);
 		}
