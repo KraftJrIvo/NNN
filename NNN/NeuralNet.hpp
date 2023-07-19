@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <iomanip>
 #include <random>
 #include <algorithm>
@@ -39,6 +40,13 @@ namespace nnn {
 
 		NeuralNet(const std::string& filePath) {
 			load(filePath);
+		}
+
+		NeuralNet<NN_S, NN_IN, NN_OUT>& operator =(const NeuralNet<NN_S, NN_IN, NN_OUT>& nn) {
+			create(nn._desc);
+			_weights = nn._weights;
+			_biases = nn._biases;
+			return *this;
 		}
 
 		void load(const std::string& filePath) {
@@ -318,6 +326,23 @@ namespace nnn {
 
 		uint64_t getCurrentEpoch() {
 			return _lastEpoch;
+		}
+
+		void mutate(float wMutProb, float crazyMutProb) {
+			float r = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX));
+			float mutProb = (r < crazyMutProb) ? 1.0f : wMutProb;
+			for (uint64_t l = 0; l < _desc.layers.size() - 1; ++l) {
+				for (int64_t j = 0; j < _weights[l].cols(); ++j) {
+					for (int64_t i = 0; i < _weights[l].rows(); ++i) {
+						float rr = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX));
+						if (rr < mutProb)
+							_weights[l](i, j) *= 2.0f * static_cast <float> (rand()) / (static_cast <float> (RAND_MAX)) - 0.5f;
+					}
+					float rr = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX));
+					if (rr < mutProb)
+						_biases[l](j) *= 2.0f * static_cast <float> (rand()) / (static_cast <float> (RAND_MAX)) - 0.5f;
+				}
+			}
 		}
 
 		void lock() {

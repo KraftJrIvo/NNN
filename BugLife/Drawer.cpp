@@ -77,7 +77,11 @@ namespace buglife
 		cv::line(_img, p4, p1, cv::Scalar(100, 100, 100), 2);
 
 		for (auto& o : _w._objects) {
-			o.draw(_img, _size, _offset, _scale, _coeff);
+			if (!o->destroyed) o->draw(_img, _size, _offset, _scale, _coeff);
+		}
+
+		for (auto& c : _w._creatures) {
+			if (!c.destroyed) c.draw(_img, _size, _offset, _scale, _coeff);
 		}
 
 		auto onMouse = [](int event, int x, int y, int flags, void* _data) {
@@ -99,7 +103,27 @@ namespace buglife
 			}
 
 			if (event == cv::EVENT_LBUTTONDOWN) lmb = true;
-			if (event == cv::EVENT_LBUTTONUP) lmb = false;
+			if (event == cv::EVENT_LBUTTONUP) {
+				lmb = false;
+				auto c2d = ((Drawer*)_data)->_getPos2d(((Drawer*)_data)->_mouse);
+
+				Creature* clickedCreature = nullptr;
+				for (auto& c : ((Drawer*)_data)->_w._creatures) {					
+					if (cv::norm(c.pos - c2d) < c.radius) {
+						clickedCreature = &c;
+						break;
+					}
+				}
+
+				if (clickedCreature) {
+					static int nsaved = 0;
+					clickedCreature->species.brain.save(std::to_string(nsaved++) + ".nnn");
+				} else {
+					Species s; //s.mutate(1.0f);
+					s.brain.load("zoo/specimen0.nnn");
+					((Drawer*)_data)->_w.add(((Drawer*)_data)->_w._creatures, Creature(s, { c2d.x, c2d.y }, BL_RAND_FLOAT * 2.0f * 3.14159));
+				}
+			}
 			((Drawer*)_data)->_lclick = (event == cv::EVENT_LBUTTONUP);
 
 			if (lmb) {

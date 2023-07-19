@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Creature.h"
+#include "types.h"
 
 namespace buglife {
 
@@ -8,24 +8,33 @@ namespace buglife {
 	public:
 		float nutrition;
 
-		Food(const cv::Vec3b& color, const cv::Point2f& pos, float radius, float nutrition) :
-			Object(color, pos, radius),
-			nutrition(nutrition)
+		Food(const cv::Point2f& pos, float radius = BL_FOOD_RADIUS, cv::Vec3b color = BL_FOOD_COLOR) :
+			Object(color, pos, radius, true),
+			nutrition(2.0f * 3.14159f * BL_FOOD_RADIUS * BL_FOOD_RADIUS)
 		{ }
 
+		float getNutrition() { return nutrition; }
+		bool isFood() { return true; }
+		void bitten(float dmg) { destroyed = true; }
 	};
 
 	class Egg : public Food {
 	public:
-		float nutrition;
+		float timeToHatch;
+		bool hatching = false;
+		Species species;
 
-		Egg(const cv::Vec3b& color, const cv::Point2f& pos, float radius, float nutrition, const Creature& creature) :
-			Food(color, pos, radius, nutrition),
-			_creature(creature)
+		Egg(const Species& species, const cv::Point2f& pos, float timeToHatch = BL_TIME_TO_HATCH) :
+			Food(pos, BL_EGG_RADIUS, species.eggColor),
+			species(species),
+			timeToHatch(timeToHatch)
 		{ }
 
-	private:
-		Creature _creature;
+		bool isHatching() { return hatching; }
 
+		void update(double dt) {
+			timeToHatch -= dt;
+			hatching = (timeToHatch < 0.0f);
+		}
 	};
 }

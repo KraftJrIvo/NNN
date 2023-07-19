@@ -1,28 +1,66 @@
 #pragma once
 
+#include <algorithm>
+
 #include "types.h"
+#include "Food.h"
 #include "../NNN/NeuralNet.hpp"
 
 namespace buglife {
 
+	struct LookInfo {
+		bool seeSmth = false;
+		float dist = -1.0f;
+		cv::Vec3b color = { 100, 100, 100 };
+		Object* target;
+	};
+
 	class Creature : public Object {
 	public:
-		float orient;
-		float maxEnergy, energy;
+		float orient, d_orient, eyeOrient;
+		float boost = 0;
+		float maxEnergy;
+		float energy, prvEnergy;
+		bool triesToBite, isBiting;
+		bool triesToLay, isLaying;
+		Species species;
+		LookInfo lastLook;
 
-		Creature(const nnn::NeuralNet<BL_SCALAR, BL_IN_LAYER, BL_OUT_LAYER>& nn, const cv::Vec3b& color, const cv::Point2f& pos, float radius = 3.0f) :
-			Object(color, pos, radius),
-			_nn(nn)
+		Creature(const Species& species, const cv::Point2f& pos, float orient) :
+			Object(species.color, pos, species.radius, true),
+			species(species),
+			orient(orient),
+			maxEnergy(species.getMaxEnergy()),
+			energy(maxEnergy / 2.0f),
+			prvEnergy(maxEnergy / 2.0f),
+			eyeOrient(0)
 		{ }
 
-		virtual void update(double time);
+		Creature(const Egg& egg) :
+			Object(egg.species.color, egg.pos, egg.species.radius, true),
+			species(egg.species),
+			orient(BL_RAND_FLOAT * 2.0f * 3.14159),
+			maxEnergy(egg.species.getMaxEnergy()),
+			energy(maxEnergy),
+			prvEnergy(maxEnergy),
+			eyeOrient(0)
+		{ }
 
-		float getWeight();
-		float drainEnergy();
+		Creature(const Creature& cre) :
+			Creature(cre.species, cre.pos, cre.orient)
+		{ }
 
-	private:
-		nnn::NeuralNet<BL_SCALAR, BL_IN_LAYER, BL_OUT_LAYER> _nn;
+		float getNutrition() { return maxEnergy / 2.0f; }
 
+		void live(const LookInfo& li, double dt);
+
+		virtual void draw(cv::Mat img, const cv::Point2f& size, const cv::Point2f& offset, float scale, float coeff) const;
+
+		void feed(float nutr);
+		void bitten(float dmg);
+		void bite(Object& obj);
+		
+		Egg layEgg();
 	};
 
 }
