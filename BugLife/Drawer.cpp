@@ -76,6 +76,7 @@ namespace buglife
 		cv::line(_img, p3, p4, cv::Scalar(100, 100, 100), 2);
 		cv::line(_img, p4, p1, cv::Scalar(100, 100, 100), 2);
 
+		_w.lock();
 		for (auto& o : _w._objects) {
 			if (!o->destroyed) o->draw(_img, _size, _offset, _scale, _coeff);
 		}
@@ -83,6 +84,7 @@ namespace buglife
 		for (auto& c : _w._creatures) {
 			if (!c.destroyed) c.draw(_img, _size, _offset, _scale, _coeff);
 		}
+		_w.unlock();
 
 		auto onMouse = [](int event, int x, int y, int flags, void* _data) {
 			static bool lmb = false;
@@ -98,31 +100,44 @@ namespace buglife
 				lastOffset = ((Drawer*)_data)->_offset;
 			}
 
-			if (event == cv::EVENT_LBUTTONUP && lmb) {
-				//lastPos = { x, y };
+
+
+			static bool rmb = false;
+			if (event == cv::EVENT_RBUTTONDOWN) rmb = true;
+			if (event == cv::EVENT_RBUTTONUP && rmb) {
+				((Drawer*)_data)->_w.timescale();
+				rmb = false;
 			}
 
-			if (event == cv::EVENT_LBUTTONDOWN) lmb = true;
-			if (event == cv::EVENT_LBUTTONUP) {
-				lmb = false;
+			if (event == cv::EVENT_LBUTTONUP && lmb) {
 				auto c2d = ((Drawer*)_data)->_getPos2d(((Drawer*)_data)->_mouse);
 
 				Creature* clickedCreature = nullptr;
-				for (auto& c : ((Drawer*)_data)->_w._creatures) {					
+				((Drawer*)_data)->_w.lock();
+				for (auto& c : ((Drawer*)_data)->_w._creatures) {
 					if (cv::norm(c.pos - c2d) < c.radius) {
 						clickedCreature = &c;
 						break;
 					}
 				}
+				((Drawer*)_data)->_w.unlock();
+
 
 				if (clickedCreature) {
 					static int nsaved = 0;
-					clickedCreature->species.brain.save(std::to_string(nsaved++) + ".nnn");
-				} else {
-					Species s; //s.mutate(1.0f);
-					s.brain.load("zoo/specimen0.nnn");
-					((Drawer*)_data)->_w.add(((Drawer*)_data)->_w._creatures, Creature(s, { c2d.x, c2d.y }, BL_RAND_FLOAT * 2.0f * 3.14159));
+					clickedCreature->species.save("zoo/" + std::to_string(nsaved++) + ".spc");
 				}
+				else {
+					Species s; //s.mutate(1.0f);
+					s.load("zoo/specimen0.spc");
+					((Drawer*)_data)->_w._add(((Drawer*)_data)->_w._creatures, Creature(s, { c2d.x, c2d.y }, BL_RAND_FLOAT * 2.0f * 3.14159));
+				}
+			}
+
+			if (event == cv::EVENT_LBUTTONDOWN) lmb = true;
+			if (event == cv::EVENT_LBUTTONUP) {
+				lmb = false;
+				
 			}
 			((Drawer*)_data)->_lclick = (event == cv::EVENT_LBUTTONUP);
 
@@ -148,10 +163,6 @@ namespace buglife
 				float sgn = mwdelta / abs(mwdelta);
 				((Drawer*)_data)->_offset -= ((Drawer*)_data)->_getScaledProj(c2d) - ((Drawer*)_data)->_getScaledProj(((Drawer*)_data)->_getPos2d(((Drawer*)_data)->_mouse));
 			}
-
-			static bool rmb = false;
-			if (event == cv::EVENT_RBUTTONDOWN) rmb = true;
-			if (event == cv::EVENT_RBUTTONUP) rmb = false;
 		};
 		cv::imshow(_windowName, _img);
 		cv::setMouseCallback(_windowName, onMouse, this);

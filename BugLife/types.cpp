@@ -28,9 +28,9 @@ namespace buglife {
             c = { uchar(255.0f * BL_RAND_FLOAT), uchar(255.0f * BL_RAND_FLOAT), uchar(255.0f * BL_RAND_FLOAT) };
         }
         else {
-            uchar red = uchar(255.0f * std::clamp((0.75f + r / 2.0f) * float(color[0]) / 255.0f, 0.0f, 1.0f));
-            uchar green = uchar(255.0f * std::clamp((0.75f + r / 2.0f) * float(color[0]) / 255.0f, 0.0f, 1.0f));
-            uchar blue = uchar(255.0f * std::clamp((0.75f + r / 2.0f) * float(color[0]) / 255.0f, 0.0f, 1.0f));
+            uchar red = uchar(255.0f * std::clamp((0.75f + BL_RAND_FLOAT / 2.0f) * float(color[0]) / 255.0f, 0.0f, 1.0f));
+            uchar green = uchar(255.0f * std::clamp((0.75f + BL_RAND_FLOAT / 2.0f) * float(color[1]) / 255.0f, 0.0f, 1.0f));
+            uchar blue = uchar(255.0f * std::clamp((0.75f + BL_RAND_FLOAT / 2.0f) * float(color[2]) / 255.0f, 0.0f, 1.0f));
             c = { blue, green, red };
         }
     }
@@ -45,7 +45,7 @@ namespace buglife {
         if (crazyMut || (r > 0.3f && r < 0.4f))
             mutateColor(eggColor);
         if (crazyMut || (r > 0.4f && r < 0.5f))
-            eyesight = std::clamp((0.75f + r / 2.0f) * eyesight, 0.5f, BL_MAX_EYESIGHT);
+            eyesight = std::clamp((0.75f + BL_RAND_FLOAT / 2.0f) * eyesight, 0.5f, BL_MAX_EYESIGHT);
         if (crazyMut || (r > 0.5f)) {
             brain.mutate(BL_BRAIN_W_MUT_PROB, crazyMut ? 1.0f : crazyMutProb);
         }

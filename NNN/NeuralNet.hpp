@@ -49,8 +49,24 @@ namespace nnn {
 			return *this;
 		}
 
-		void load(const std::string& filePath) {
-			std::ifstream in(filePath, std::ios::binary);
+		void save(std::ofstream& out) {
+			_desc.save(out);
+			for (int64_t l = 0; l < _desc.layers.size() - 1; ++l) {
+				for (int64_t j = 0; j < _biases[l].cols(); ++j) {
+					out.write(reinterpret_cast<const char*>(&_biases[l](j)), sizeof(NN_S));
+					for (int64_t i = 0; i < _weights[l].rows(); ++i) {
+						out.write(reinterpret_cast<const char*>(&_weights[l](i, j)), sizeof(NN_S));
+					}
+				}
+			}
+		}
+
+		void save(const std::string& filePath) {
+			std::ofstream out(filePath, std::ios::binary);
+			save(out);
+		}
+
+		void load(std::ifstream& in) {
 			NNDesc desc; desc.load(in);
 			create(desc);
 			for (int64_t l = 0; l < _desc.layers.size() - 1; ++l) {
@@ -63,17 +79,9 @@ namespace nnn {
 			}
 		}
 
-		void save(const std::string& filePath) {
-			std::ofstream out(filePath, std::ios::binary);
-			_desc.save(out);
-			for (int64_t l = 0; l < _desc.layers.size() - 1; ++l) {
-				for (int64_t j = 0; j < _biases[l].cols(); ++j) {
-					out.write(reinterpret_cast<const char*>(&_biases[l](j)), sizeof(NN_S));
-					for (int64_t i = 0; i < _weights[l].rows(); ++i) {
-						out.write(reinterpret_cast<const char*>(&_weights[l](i, j)), sizeof(NN_S));
-					}
-				}
-			}
+		void load(const std::string& filePath) {
+			std::ifstream in(filePath, std::ios::binary);
+			load(in);
 		}
 
 		void create(const NNDesc& desc) {

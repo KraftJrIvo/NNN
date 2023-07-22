@@ -10,7 +10,7 @@ namespace buglife {
 			float r1 = BL_RAND_FLOAT;
 			float r2 = BL_RAND_FLOAT;
 			float r3 = BL_RAND_FLOAT;
-			add(_rocks, Rock(cv::Vec3b(20, 40, 60), { r1 * size.width, r2 * size.height }, std::max(r3, 0.1f), false));
+			_add(_rocks, Rock(cv::Vec3b(20, 40, 60), { r1 * size.width, r2 * size.height }, std::max(r3, 0.1f), false));
 		}
 		_startTime = std::chrono::system_clock::now();
 	}
@@ -43,7 +43,7 @@ namespace buglife {
 
 	void World::update() {		
 		std::chrono::duration<double> seconds = std::chrono::system_clock::now() - _startTime;
-		auto dt = seconds.count() - _time;
+		auto dt = _timescale * (_first ? 0 : (seconds.count() - _time));
 		_time = seconds.count();
 
 		for (int s = 0; s < SUB_STEPS; ++s) {
@@ -84,7 +84,7 @@ namespace buglife {
 			if (c.destroyed) {
 				int ndrop = c.getNutrition() / (2.0f * 3.14159f * BL_FOOD_RADIUS * BL_FOOD_RADIUS);
 				for (int i = 0; i < ndrop; ++i) {
-					add(_foods, Food(c.pos + cv::Point2f(BL_RAND_FLOAT / 100.0f, BL_RAND_FLOAT / 100.0f)));
+					_add(_foods, Food(c.pos + cv::Point2f(BL_RAND_FLOAT / 100.0f, BL_RAND_FLOAT / 100.0f)));
 				}
 			} else {
 				if (li.seeSmth && li.dist < BL_BITE_DIST && c.isBiting) {
@@ -93,13 +93,16 @@ namespace buglife {
 						if (!li.target->isFood()) {
 							int ndrop = li.target->getNutrition() / (2.0f * 3.14159f * BL_FOOD_RADIUS * BL_FOOD_RADIUS);
 							for (int i = 0; i < ndrop; ++i) {
-								add(_foods, Food(li.target->pos + cv::Point2f(BL_RAND_FLOAT / 100.0f, BL_RAND_FLOAT / 100.0f)));
+								_add(_foods, Food(li.target->pos + cv::Point2f(BL_RAND_FLOAT / 100.0f, BL_RAND_FLOAT / 100.0f)));
 							}
 						}
 					}
 				}
-				if (c.isLaying) {
-					add(_eggs, c.layEgg());
+				if (c.isLaying && _creatures.size() < BL_MAX_CREATURES) {
+					lock();
+					_add(_eggs, c.layEgg(0.0f));
+					_add(_eggs, c.layEgg(1.0f));
+					unlock();
 				}
 			}
 		}
@@ -125,21 +128,40 @@ namespace buglife {
 			}
 		}
 
+		lock();
 		for (auto& e : _eggs) {
 			if (!e.destroyed && e.isHatching()) {
-				add(_creatures, Creature(e));
+				_add(_creatures, Creature(e));
 				e.destroyed = true;
 			}
 		}
 
 		if (_foods.size() < BL_MAX_FOODS) {
-			add(_foods, Food({ BL_RAND_FLOAT * size.width, BL_RAND_FLOAT * size.height }));
+			_add(_foods, Food({ BL_RAND_FLOAT * size.width, BL_RAND_FLOAT * size.height }));
 		}
 
-		checkClearPtr(_objects);
-		checkClear(_rocks);
-		checkClear(_foods);
-		checkClear(_eggs);
-		checkClear(_creatures);
+		if (_poison.size() < BL_MAX_POISON) {
+			_add(_poison, Poison({ BL_RAND_FLOAT * size.width, BL_RAND_FLOAT * size.height }));
+		}
+		for (auto& p : _poison) {
+			if (!p.destroyed && p.pos.x < 2 || p.pos.x > size.width - 2 || p.pos.y < 2 || p.pos.y > size.height - 2) {
+				p.destroyed = true;
+			}
+		}
+		
+		_checkClearPtr(_objects);
+		_checkClear(_rocks);
+		_checkClear(_foods);
+		_checkClear(_poison);
+		_checkClear(_eggs);
+		_checkClear(_creatures);
+		unlock();
+
+		if (_time - _lastSaveTime > BL_AUTOSAVE_INTERVAL) {
+			save("world.w");
+			_lastSaveTime = _time;
+		}
+
+		_first = false;
 	}
 }

@@ -13,21 +13,21 @@
 #define BL_RAND_FLOAT static_cast <float> (rand()) / (static_cast <float> (RAND_MAX))
 
 // in
-// prv(vel d_ori a_bite a_lay) nrg d_nrg e_ori closeness r g b  (11)
+// nrg d_nrg closeness r g b target t_ori  (8)
 // out
-// vel d_ori a_bite a_lay
+// vel d_ori a_bite a_lay a_target (5)
 
 #define BL_SCALAR float
-#define BL_IN_LAYER 11
-#define BL_OUT_LAYER 4
+#define BL_IN_LAYER 8
+#define BL_OUT_LAYER 5
 #define BL_DEFAULT_DESC \
 	nnn::NNDesc({\
 		{\
 			{BL_IN_LAYER, nnn::ActivationFunctionType::NONE},\
-			{BL_IN_LAYER, nnn::ActivationFunctionType::SIGMOID },\
-			{BL_IN_LAYER, nnn::ActivationFunctionType::SIGMOID },\
-			{8          , nnn::ActivationFunctionType::SIGMOID },\
-			{8          , nnn::ActivationFunctionType::SIGMOID },\
+			{16, nnn::ActivationFunctionType::SIGMOID },\
+			{14, nnn::ActivationFunctionType::SIGMOID },\
+			{10, nnn::ActivationFunctionType::SIGMOID },\
+			{8, nnn::ActivationFunctionType::SIGMOID },\
             {BL_OUT_LAYER, nnn::ActivationFunctionType::SIGMOID }\
 		}, nnn::OptimizerType::ADAM, nnn::LossFunctionType::L2\
 	})
@@ -40,16 +40,26 @@
 #define BL_DEF_EYESIGHT 10.0f
 #define BL_MAX_EYESIGHT 50.0f
 #define BL_WALK_DRAIN 0.05f
+#define BL_ROT_DRAIN 0.02f
 #define BL_BASE_DRAIN 0.01f
 #define BL_BITE_DRAIN_PERCENT 0.05f
 #define BL_BIRTH_DRAIN_PERCENT 0.7f
 #define BL_BITE_DMG 0.5f
-#define BL_MAX_FOODS 400
+
 #define BL_FOOD_RADIUS 0.3f
 #define BL_FOOD_COLOR cv::Vec3b(0, 255, 0)
+#define BL_MAX_FOODS 100
+#define BL_POISON_RADIUS 0.3f
+#define BL_POISON_COLOR cv::Vec3b(0, 0, 255)
+#define BL_MAX_POISON 500
+
 #define BL_TIME_TO_HATCH 5.0f
 #define BL_BITE_DIST 1.0f
 #define BL_ROT_THRESH 0.05f
+#define BL_MAX_CREATURES 100
+#define BL_MAX_AGE 200.0f
+#define BL_AUTOSAVE_INTERVAL 60.0f
+#define BL_TIMESCALE 15.0f
 
 namespace buglife {
 
@@ -59,7 +69,9 @@ namespace buglife {
 		cv::Vec3b color;
 		float radius;
 		bool dynamic;
-        bool destroyed = false;        
+        bool destroyed = false;  
+
+		Object() { }
 
 		Object(const cv::Vec3b& color, cv::Point2f pos, float radius, bool dynamic) :
 			color(color), pos(pos), prvPos(pos), radius(radius), dynamic(dynamic)
@@ -74,6 +86,36 @@ namespace buglife {
         virtual void update(double dt);
 
         virtual void draw(cv::Mat img, const cv::Point2f& size, const cv::Point2f& offset, float scale, float coeff) const;
+
+		virtual void save(std::ofstream& out) {
+			out.write(reinterpret_cast<const char*>(&pos.x), sizeof(float));
+			out.write(reinterpret_cast<const char*>(&pos.y), sizeof(float));
+			out.write(reinterpret_cast<const char*>(&prvPos.x), sizeof(float));
+			out.write(reinterpret_cast<const char*>(&prvPos.y), sizeof(float));
+			out.write(reinterpret_cast<const char*>(&vel.x), sizeof(float));
+			out.write(reinterpret_cast<const char*>(&vel.y), sizeof(float));
+			out.write(reinterpret_cast<const char*>(&color[0]), sizeof(uchar));
+			out.write(reinterpret_cast<const char*>(&color[1]), sizeof(uchar));
+			out.write(reinterpret_cast<const char*>(&color[2]), sizeof(uchar));
+			out.write(reinterpret_cast<const char*>(&radius), sizeof(float));
+			out.write(reinterpret_cast<const char*>(&dynamic), sizeof(bool));
+			out.write(reinterpret_cast<const char*>(&destroyed), sizeof(bool));
+		}
+
+		virtual void load(std::ifstream& in) {
+			in.read(reinterpret_cast<char*>(&pos.x), sizeof(float));
+			in.read(reinterpret_cast<char*>(&pos.y), sizeof(float));
+			in.read(reinterpret_cast<char*>(&prvPos.x), sizeof(float));
+			in.read(reinterpret_cast<char*>(&prvPos.y), sizeof(float));
+			in.read(reinterpret_cast<char*>(&vel.x), sizeof(float));
+			in.read(reinterpret_cast<char*>(&vel.y), sizeof(float));
+			in.read(reinterpret_cast<char*>(&color[0]), sizeof(uchar));
+			in.read(reinterpret_cast<char*>(&color[1]), sizeof(uchar));
+			in.read(reinterpret_cast<char*>(&color[2]), sizeof(uchar));
+			in.read(reinterpret_cast<char*>(&radius), sizeof(float));
+			in.read(reinterpret_cast<char*>(&dynamic), sizeof(bool));
+			in.read(reinterpret_cast<char*>(&destroyed), sizeof(bool));
+		}
 	};
 
 	typedef Object Rock;
@@ -102,6 +144,40 @@ namespace buglife {
 		float getMaxEnergy() const;
 		void mutateColor(cv::Vec3b& c);
 		void mutate(float crazyMutProb);
+
+		void save(std::ofstream& out) {
+			out.write(reinterpret_cast<const char*>(&radius), sizeof(float));
+			out.write(reinterpret_cast<const char*>(&color[0]), sizeof(uchar));
+			out.write(reinterpret_cast<const char*>(&color[1]), sizeof(uchar));
+			out.write(reinterpret_cast<const char*>(&color[2]), sizeof(uchar));
+			out.write(reinterpret_cast<const char*>(&eggColor[0]), sizeof(uchar));
+			out.write(reinterpret_cast<const char*>(&eggColor[1]), sizeof(uchar));
+			out.write(reinterpret_cast<const char*>(&eggColor[2]), sizeof(uchar));
+			out.write(reinterpret_cast<const char*>(&eyesight), sizeof(float));
+			brain.save(out);
+		}
+
+		void save(const std::string& filePath) {
+			std::ofstream out(filePath, std::ios::binary);
+			save(out);
+		}
+
+		void load(std::ifstream& in) {
+			in.read(reinterpret_cast<char*>(&radius), sizeof(float));
+			in.read(reinterpret_cast<char*>(&color[0]), sizeof(uchar));
+			in.read(reinterpret_cast<char*>(&color[1]), sizeof(uchar));
+			in.read(reinterpret_cast<char*>(&color[2]), sizeof(uchar));
+			in.read(reinterpret_cast<char*>(&eggColor[0]), sizeof(uchar));
+			in.read(reinterpret_cast<char*>(&eggColor[1]), sizeof(uchar));
+			in.read(reinterpret_cast<char*>(&eggColor[2]), sizeof(uchar));
+			in.read(reinterpret_cast<char*>(&eyesight), sizeof(float));
+			brain.load(in);
+		}
+
+		void load(const std::string& filePath) {
+			std::ifstream in(filePath, std::ios::binary);
+			load(in);
+		}
 	};
 
 	bool intersectCircleBySegment(const cv::Point2f& s, const cv::Point2f& e, const cv::Point2f& o, float r, cv::Point2f& point);

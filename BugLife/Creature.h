@@ -12,7 +12,7 @@ namespace buglife {
 		bool seeSmth = false;
 		float dist = -1.0f;
 		cv::Vec3b color = { 100, 100, 100 };
-		Object* target;
+		Object* target = nullptr;
 	};
 
 	class Creature : public Object {
@@ -20,11 +20,17 @@ namespace buglife {
 		float orient, d_orient, eyeOrient;
 		float boost = 0;
 		float maxEnergy;
-		float energy, prvEnergy;
+		float energy, prvEnergy, drain;
 		bool triesToBite, isBiting;
 		bool triesToLay, isLaying;
+		bool triesToTarget;
+		Object* target = nullptr;
+		float tOrient;
 		Species species;
 		LookInfo lastLook;
+		float age = 0.0f;
+
+		Creature() { }
 
 		Creature(const Species& species, const cv::Point2f& pos, float orient) :
 			Object(species.color, pos, species.radius, true),
@@ -33,6 +39,7 @@ namespace buglife {
 			maxEnergy(species.getMaxEnergy()),
 			energy(maxEnergy / 2.0f),
 			prvEnergy(maxEnergy / 2.0f),
+			drain(maxEnergy / (2.0f * 3.14159)),
 			eyeOrient(0)
 		{ }
 
@@ -60,7 +67,33 @@ namespace buglife {
 		void bitten(float dmg);
 		void bite(Object& obj);
 		
-		Egg layEgg();
+		Egg layEgg(float mutProb = BL_MUT_PROB);
+
+		void save(std::ofstream& out) {
+			Object::save(out);
+			out.write(reinterpret_cast<const char*>(&orient), sizeof(float));
+			out.write(reinterpret_cast<const char*>(&d_orient), sizeof(float));
+			out.write(reinterpret_cast<const char*>(&eyeOrient), sizeof(float));
+			out.write(reinterpret_cast<const char*>(&boost), sizeof(float));
+			out.write(reinterpret_cast<const char*>(&maxEnergy), sizeof(float));
+			out.write(reinterpret_cast<const char*>(&energy), sizeof(float));
+			out.write(reinterpret_cast<const char*>(&prvEnergy), sizeof(float));
+			out.write(reinterpret_cast<const char*>(&drain), sizeof(float));
+			species.save(out);
+		}
+
+		void load(std::ifstream& in) {
+			Object::load(in);
+			in.read(reinterpret_cast<char*>(&orient), sizeof(float));
+			in.read(reinterpret_cast<char*>(&d_orient), sizeof(float));
+			in.read(reinterpret_cast<char*>(&eyeOrient), sizeof(float));
+			in.read(reinterpret_cast<char*>(&boost), sizeof(float));
+			in.read(reinterpret_cast<char*>(&maxEnergy), sizeof(float));
+			in.read(reinterpret_cast<char*>(&energy), sizeof(float));
+			in.read(reinterpret_cast<char*>(&prvEnergy), sizeof(float));
+			in.read(reinterpret_cast<char*>(&drain), sizeof(float));
+			species.load(in);
+		}
 	};
 
 }
