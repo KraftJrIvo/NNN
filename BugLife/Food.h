@@ -7,17 +7,25 @@ namespace buglife {
 	class Food : public Object {
 	public:
 		float nutrition;
+		float expiry;
 
 		Food() { }
 
-		Food(const cv::Point2f& pos, float radius = BL_FOOD_RADIUS, cv::Vec3b color = BL_FOOD_COLOR) :
+		Food(const cv::Point2f& pos, float radius = BL_FOOD_RADIUS, cv::Vec3b color = BL_FOOD_COLOR, float expiry = BL_FOOD_EXPIRY) :
 			Object(color, pos, radius, true),
-			nutrition(2.0f * 3.14159f * BL_FOOD_RADIUS * BL_FOOD_RADIUS)
+			nutrition(2.0f * 3.14159f * BL_FOOD_RADIUS * BL_FOOD_RADIUS),
+			expiry(expiry)
 		{ }
 
 		float getNutrition() { return nutrition; }
 		bool isFood() { return true; }
 		void bitten(float dmg) { destroyed = true; }
+
+		void update(double dt) {
+			Object::update(dt);
+			expiry -= dt;
+			destroyed = (expiry < 0);
+		}
 
 		virtual void save(std::ofstream& out) {
 			Object::save(out);

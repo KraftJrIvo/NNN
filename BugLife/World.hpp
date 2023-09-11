@@ -15,7 +15,9 @@ namespace buglife {
 		cv::Size2i size;
 
 		World(const cv::Size2i& size) :
-			size(size)
+			size(size),
+			_temperature(cv::Mat(cv::Size2i(int(size.width * BL_TEMP_RES), int(size.height * BL_TEMP_RES)), CV_32FC1, 0.0f)),
+			_nextTemperature(cv::Mat(cv::Size2i(int(size.width* BL_TEMP_RES), int(size.height* BL_TEMP_RES)), CV_32FC1, 0.0f))
 		{ }
 
 		void generate();
@@ -36,7 +38,9 @@ namespace buglife {
 
 		void save(std::ofstream& out) {
 			size_t sz = _rocks.size(); out.write(reinterpret_cast<const char*>(&sz), sizeof(size_t));
-			for (auto& r : _rocks) r.save(out);
+			for (auto& r : _rocks) r.save(out); 
+			sz = _trees.size(); out.write(reinterpret_cast<const char*>(&sz), sizeof(size_t));
+			for (auto& t : _trees) t.save(out);
 			sz = _creatures.size(); out.write(reinterpret_cast<const char*>(&sz), sizeof(size_t));
 			for (auto& c : _creatures) c.save(out);
 			sz = _foods.size(); out.write(reinterpret_cast<const char*>(&sz), sizeof(size_t));
@@ -45,6 +49,7 @@ namespace buglife {
 			for (auto& e : _eggs) e.save(out);
 			sz = _poison.size(); out.write(reinterpret_cast<const char*>(&sz), sizeof(size_t));
 			for (auto& p : _poison) p.save(out);
+			out.write(reinterpret_cast<const char*>(&_accTime), sizeof(float));
 		}
 
 		void save(const std::string& filePath) {
@@ -56,6 +61,8 @@ namespace buglife {
 			size_t sz;
 			in.read(reinterpret_cast<char*>(&sz), sizeof(size_t)); _rocks.resize(sz);
 			for (auto& r : _rocks) { r.load(in); _objects.push_back(&r); }
+			in.read(reinterpret_cast<char*>(&sz), sizeof(size_t)); _trees.resize(sz);
+			for (auto& t : _trees) { t.load(in); _objects.push_back(&t); }
 			in.read(reinterpret_cast<char*>(&sz), sizeof(size_t)); _creatures.resize(sz);
 			for (auto& c : _creatures) { c.load(in); _objects.push_back(&c); }
 			in.read(reinterpret_cast<char*>(&sz), sizeof(size_t)); _foods.resize(sz);
@@ -64,6 +71,7 @@ namespace buglife {
 			for (auto& e : _eggs) { e.load(in); _objects.push_back(&e); }
 			in.read(reinterpret_cast<char*>(&sz), sizeof(size_t)); _poison.resize(sz);
 			for (auto& p : _poison) { p.load(in); _objects.push_back(&p); }
+			in.read(reinterpret_cast<char*>(&_accTime), sizeof(float));
 		}
 
 		void load(const std::string& filePath) {
@@ -73,11 +81,15 @@ namespace buglife {
 
 	private:
 		std::chrono::system_clock::time_point _startTime;
-		double _time, _lastSaveTime, _timescale = 1.0f;
+		double _time, _lastSaveTime, _timescale = 1.0;
+		float _accTime = 0.0f;
+
+		cv::Mat _temperature, _nextTemperature;
 		
 		bool _first = true;
 
 		std::list<Rock> _rocks;
+		std::list<Tree> _trees;
 		std::list<Creature> _creatures;
 		std::list<Food> _foods;
 		std::list<Egg> _eggs;
@@ -85,6 +97,8 @@ namespace buglife {
 		std::list<Object*> _objects;
 
 		std::mutex _lock;
+
+		void _updateTemperature(float dt);
 
 		template<typename T>
 		void _add(std::list<T>& l, const T& o) {
@@ -109,9 +123,16 @@ namespace buglife {
 			auto it = l.begin();
 			while (it != l.end())
 			{
-				if ((*it)->destroyed)
+				if ((*it)->destroyed) {
+					for (auto& c : _creatures) {
+						if (c.destroyed)
+							continue;
+						if (c.target == (*it)) {
+							c.target = nullptr;
+						}
+					}
 					l.erase(it++);
-				else
+				} else if (it != l.end())
 					++it;
 			}
 		}

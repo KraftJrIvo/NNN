@@ -71,6 +71,22 @@ namespace buglife
 		cv::Point2f p2 = _getScaledProj({(float)_w.size.width, 0});
 		cv::Point2f p3 = _getScaledProj({ (float)_w.size.width, (float)_w.size.height });
 		cv::Point2f p4 = _getScaledProj({ 0, (float)_w.size.height });
+		cv::Point2f ltw = { 0, 0 };
+		cv::Point2f rbw = { (float)_w.size.width, (float)_w.size.height };
+		cv::Point2f lt = _getPos2d({0, 0});
+		cv::Point2f rb = _getPos2d({ _size.x, _size.y });
+		auto x1 = int((lt.x > ltw.x) ? ((float)_w._temperature.cols * ((lt.x - ltw.x) / (rbw.x - ltw.x))) : 0.0f);
+		auto y1 = int((lt.y > ltw.y) ? ((float)_w._temperature.rows * ((lt.y - ltw.y) / (rbw.y - ltw.y))) : 0.0f);
+		auto w1 = int((rb.x < rbw.x) ? ((float)_w._temperature.cols * ((rb.x - ((lt.x > ltw.x) ? lt.x : ltw.x)) / (rbw.x - ltw.x))) : (float)(_w._temperature.cols - x1));
+		auto h1 = int((rb.y < rbw.y) ? ((float)_w._temperature.rows * ((rb.y - ((lt.y > ltw.y) ? lt.y : ltw.y)) / (rbw.y - ltw.y))) : (float)(_w._temperature.rows - y1));
+		cv::Mat tempPiece = _w._temperature({ x1, y1, w1, h1 });
+		tempPiece.convertTo(_temperatureUchar, CV_8UC1, 255.0f);
+		if (!_temperatureUchar.empty()) {
+			cv::applyColorMap(_temperatureUchar, _temperatureRGB, cv::COLORMAP_PINK);
+			cv::Size tempSz = { int(_coeff / BL_TEMP_RES * (float)tempPiece.cols), int(_coeff / BL_TEMP_RES * (float)tempPiece.rows) };
+			cv::resize(_temperatureRGB, _temperatureRGB, tempSz, 0.0, 0.0, cv::INTER_LINEAR);
+			_temperatureRGB.copyTo(_img({ (int)std::max(p1.x, 0.0f), (int)std::max(p1.y, 0.0f), tempSz.width, tempSz.height }));
+		}
 		cv::line(_img, p1, p2, cv::Scalar(100, 100, 100), 2);
 		cv::line(_img, p2, p3, cv::Scalar(100, 100, 100), 2);
 		cv::line(_img, p3, p4, cv::Scalar(100, 100, 100), 2);
@@ -99,8 +115,6 @@ namespace buglife
 				lastPos = { (float)x, (float)y };
 				lastOffset = ((Drawer*)_data)->_offset;
 			}
-
-
 
 			static bool rmb = false;
 			if (event == cv::EVENT_RBUTTONDOWN) rmb = true;

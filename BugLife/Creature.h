@@ -29,6 +29,7 @@ namespace buglife {
 		Species species;
 		LookInfo lastLook;
 		float age = 0.0f;
+		float lastTemp = BL_CREATURE_TEMP, lastFwdTemp = BL_CREATURE_TEMP;
 
 		Creature() { }
 
@@ -57,9 +58,10 @@ namespace buglife {
 			Creature(cre.species, cre.pos, cre.orient)
 		{ }
 
-		float getNutrition() { return maxEnergy / 2.0f; }
+		float getNutrition() { return maxEnergy / 3.0f; }
 
-		void live(const LookInfo& li, double dt);
+		void live(const LookInfo& li, double dt, const cv::Size2i& wsz);
+		void handleTemperature(float temp, float fwdTemp);
 
 		virtual void draw(cv::Mat img, const cv::Point2f& size, const cv::Point2f& offset, float scale, float coeff) const;
 
@@ -67,6 +69,7 @@ namespace buglife {
 		void bitten(float dmg);
 		void bite(Object& obj);
 		
+		bool tryLay();
 		Egg layEgg(float mutProb = BL_MUT_PROB);
 
 		void save(std::ofstream& out) {

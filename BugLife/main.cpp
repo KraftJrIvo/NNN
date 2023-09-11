@@ -7,7 +7,7 @@
 using namespace nnn;
 
 // in
-// nrg d_nrg closeness r g b target t_ori  (8)
+// nrg d_nrg closeness r g b target t_ori temp tempfwd age  (11)
 // out
 // vel d_ori a_bite a_lay a_target (5)
 
@@ -15,7 +15,7 @@ void prepareMinimalSurvivingSpecimen() {
 
 	std::vector<SampleIn<float, BL_IN_LAYER>> ins;
 	std::vector<SampleOut<float, BL_OUT_LAYER>> outs;
-	for (int i = 0; i < 10000; ++i) {
+	for (int i = 0; i < 2000; ++i) {
 		SampleIn<float, BL_IN_LAYER> in;
 		for (int j = 0; j < in.cols(); ++j)
 			in[j] = BL_RAND_FLOAT;
@@ -28,18 +28,18 @@ void prepareMinimalSurvivingSpecimen() {
 		bool seesFood = target && abs(t_ori - 0.5) < 0.05;
 		float boost = seesFood ? 1.0f : 0.75f;
 		float d_ori = target ? t_ori : 0.75f;
-		float tryToBite = seesFood && (closeness > 0 && closeness <= 0.1);
+		float tryToBite = (closeness < 1.0f) && seesFood && (closeness > 0 && closeness <= 0.01);
 		float tryToLay = (energy > 0.95) ? 1.0f : 0.0f;
 		float tryToTarget = (!target && (r > 0.5 || g > 0.5 || b > 0.5)) ? 1.0f : 0.0f;
-		if (tryToBite < 0.5f && i > 9000) {
+		if (tryToBite < 0.5f && i > 1800) {
 			i--;
 			continue;
 		}
-		if (tryToLay < 0.5f && i > 8000 && i < 9000) {
+		if (tryToLay < 0.5f && i > 1600 && i < 1800) {
 			i--;
 			continue;
 		}
-		if (tryToTarget < 0.5f && i > 7000 && i < 8000) {
+		if (tryToTarget < 0.5f && i > 1400 && i < 1600) {
 			i--;
 			continue;
 		}
@@ -69,12 +69,12 @@ void prepareMinimalSurvivingSpecimen() {
 
 		std::cout << "training...\n";
 
-		nn.train(train_data, 5000, 1, 0.005f, true);
+		nn.train(train_data, 10000, 1, 0.0005f, true);
 
 		if (nn.restart)
 			continue;
 
-		nn.test(train_data);
+		//nn.test(train_data);
 
 		std::cout << "done.\n";
 

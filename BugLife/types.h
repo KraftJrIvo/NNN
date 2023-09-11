@@ -10,15 +10,15 @@
 
 #include "../NNN/NeuralNet.hpp"
 
-#define BL_RAND_FLOAT static_cast <float> (rand()) / (static_cast <float> (RAND_MAX))
+#define BL_RAND_FLOAT static_cast <float> (rand()) / (static_cast <float> (RAND_MAX) + 1.0f)
 
 // in
-// nrg d_nrg closeness r g b target t_ori  (8)
+// nrg d_nrg closeness r g b target t_ori  (11)
 // out
 // vel d_ori a_bite a_lay a_target (5)
 
 #define BL_SCALAR float
-#define BL_IN_LAYER 8
+#define BL_IN_LAYER 11
 #define BL_OUT_LAYER 5
 #define BL_DEFAULT_DESC \
 	nnn::NNDesc({\
@@ -39,27 +39,38 @@
 #define BL_BRAIN_W_MUT_PROB 0.03f
 #define BL_DEF_EYESIGHT 10.0f
 #define BL_MAX_EYESIGHT 50.0f
-#define BL_WALK_DRAIN 0.05f
+#define BL_WALK_DRAIN 0.03f
 #define BL_ROT_DRAIN 0.02f
-#define BL_BASE_DRAIN 0.01f
+#define BL_BASE_DRAIN 0.005f
+#define BL_BASE_TEMP_DRAIN 100.0f
 #define BL_BITE_DRAIN_PERCENT 0.05f
 #define BL_BIRTH_DRAIN_PERCENT 0.7f
+#define BL_TRY_BIRTH_DRAIN_PERCENT 0.1f
 #define BL_BITE_DMG 0.5f
+#define BL_DRAIN_COEFF 1.0f
 
 #define BL_FOOD_RADIUS 0.3f
 #define BL_FOOD_COLOR cv::Vec3b(0, 255, 0)
-#define BL_MAX_FOODS 100
+#define BL_FOOD_EXPIRY 300.0f
+#define BL_MAX_FOODS 125
 #define BL_POISON_RADIUS 0.3f
 #define BL_POISON_COLOR cv::Vec3b(0, 0, 255)
-#define BL_MAX_POISON 500
+#define BL_MAX_POISON 50
 
 #define BL_TIME_TO_HATCH 5.0f
-#define BL_BITE_DIST 1.0f
+#define BL_BITE_DIST 0.5f
 #define BL_ROT_THRESH 0.05f
-#define BL_MAX_CREATURES 100
-#define BL_MAX_AGE 200.0f
+#define BL_MAX_CREATURES 200
+#define BL_MAX_AGE 1000.0f
 #define BL_AUTOSAVE_INTERVAL 60.0f
 #define BL_TIMESCALE 15.0f
+
+#define BL_TEMP_RES 3.0f
+#define BL_TEMP_DIFFUSIVITY 0.05f
+#define BL_CREATURE_TEMP 0.1f
+#define BL_NIGHT_D_TEMP -0.05f
+#define BL_DAY_D_TEMP 0.025f
+#define BL_DAY_LEN 60.0f
 
 namespace buglife {
 
@@ -119,9 +130,10 @@ namespace buglife {
 	};
 
 	typedef Object Rock;
+	typedef Object Tree;
 
 	struct Species {
-		float radius = 1.0f;
+		float radius = 0.5f;
 		cv::Vec3b color = { 100, 100, 200 };
 		cv::Vec3b eggColor = { 100, 100, 200 };
 		float eyesight = BL_DEF_EYESIGHT;

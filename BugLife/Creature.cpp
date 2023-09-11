@@ -37,19 +37,30 @@ namespace buglife {
 		obj.bitten(dmg);
 	}
 
+	bool Creature::tryLay() {
+		energy -= maxEnergy * BL_TRY_BIRTH_DRAIN_PERCENT / 2.0f;
+		float r = BL_RAND_FLOAT;
+		return r < (age / BL_MAX_AGE);
+	}
+
 	Egg Creature::layEgg(float mutProb) {
 		Species s(species); 
+		energy -= maxEnergy * BL_BIRTH_DRAIN_PERCENT / 2.0f;
 		if (BL_RAND_FLOAT < mutProb) s.mutate(BL_CRAZY_MUT_PROB);
 		return Egg(s, pos + cv::Point2f(BL_RAND_FLOAT / 100.0f, BL_RAND_FLOAT / 100.0f));
 	}
 
-	void Creature::live(const LookInfo& li, double dt) {
+	void Creature::live(const LookInfo& li, double dt, const cv::Size2i& wsz) {
 
-		if (target) {
-			cv::Point2f diff = (target->pos - pos);
-			float ori = atan2(diff.y, diff.x);
+		if (target && !target->destroyed) {
+			auto tpos = target->pos - pos;
+			if (tpos.x < -wsz.width / 2) tpos.x += wsz.width;
+			if (tpos.x > wsz.width / 2) tpos.x -= wsz.width;
+			if (tpos.y < -wsz.height / 2) tpos.y += wsz.height;
+			if (tpos.y > wsz.height / 2) tpos.y -= wsz.height;
+			float ori = atan2(tpos.y, tpos.x);
 			tOrient = ori - orient;
-			if (cv::norm(diff) > species.eyesight || abs(tOrient) > 3.14159f / 2.0f) {
+			if (cv::norm(tpos) > species.eyesight || abs(tOrient) > 3.14159f / 2.0f) {
 				target = nullptr;
 			}
 		}
@@ -67,10 +78,12 @@ namespace buglife {
 		awareness[5] = float(li.color[2]) / 255.0f;
 		awareness[6] = target ? 1.0f : 0.0f;
 		awareness[7] = target ? (0.5f + tOrient / 3.14159f) : 0.5f;
+		awareness[8] = (lastTemp < BL_CREATURE_TEMP) ? (0.5f * lastTemp / BL_CREATURE_TEMP) : (0.5f + 0.5f * std::clamp(lastTemp / 255.0f, 0.0f, 1.0f));
+		awareness[9] = (lastTemp > lastFwdTemp) ? 0.0f : 1.0f;
+		awareness[10] = std::clamp(age / BL_MAX_AGE, 0.0f, 1.0f);
 		
 		Eigen::Matrix<BL_SCALAR, 1, BL_OUT_LAYER> reaction;
 		species.brain.forward(awareness, &reaction);
-		//std::cout << reaction << std::endl;
 
 		boost = 2.0f * (reaction[0] - 0.5f);
 		d_orient = (3.14159f * (reaction[1] - 0.5f));
@@ -81,14 +94,14 @@ namespace buglife {
 		if (!triesToBite && !triesToLay) {
 			if (abs(d_orient) > BL_ROT_THRESH) {
 				orient += d_orient * dt;
-				energy -= dt * abs(d_orient) * BL_ROT_DRAIN * drain;
+				energy -= dt * abs(d_orient) * BL_ROT_DRAIN * drain * BL_DRAIN_COEFF;
 			}
 			vel = boost * cv::Point2f(cos(orient), sin(orient));
-			energy -= dt * abs(boost) * BL_WALK_DRAIN * drain;
+			energy -= dt * abs(boost) * BL_WALK_DRAIN * drain * BL_DRAIN_COEFF;
 		}
 		while (orient > 3.14159f) orient -= 2.0f * 3.14159f;
 		while (orient < -3.14159f) orient += 2.0f * 3.14159f;
-		energy -= dt * BL_BASE_DRAIN * drain;
+		energy -= dt * BL_BASE_DRAIN * drain * BL_DRAIN_COEFF;
 
 		if (triesToLay) {
 			vel *= 0.0f;
@@ -98,7 +111,6 @@ namespace buglife {
 
 			if (triesToLay && energy > maxEnergy * BL_BIRTH_DRAIN_PERCENT) {
 				isLaying = true;
-				energy -= maxEnergy * BL_BIRTH_DRAIN_PERCENT;
 			}
 
 			if (!triesToLay && triesToBite && energy > maxEnergy * BL_BITE_DRAIN_PERCENT) {
@@ -116,6 +128,11 @@ namespace buglife {
 		}
 
 		age += dt;
-		drain = (maxEnergy / (2.0f * 3.14159)) * (1.0f + (age / (radius * BL_MAX_AGE)));
+		drain = ((maxEnergy / (2.0f * 3.14159)) * (1.0f + (age / (radius * BL_MAX_AGE))) + abs(lastTemp - BL_CREATURE_TEMP) * BL_BASE_TEMP_DRAIN);
+	}
+
+	void Creature::handleTemperature(float temp, float fwdTemp) {
+		lastTemp = temp;
+		lastFwdTemp = fwdTemp;
 	}
 }

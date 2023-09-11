@@ -26,6 +26,7 @@ namespace buglife
 		float _pixPerMeter;
 
 		cv::Mat _img;
+		cv::Mat _temperatureRGB, _temperatureUchar;
 		std::pair<cv::Point3f, cv::Point3f> _bounds;
 
 		void _changeZoom(float val);
