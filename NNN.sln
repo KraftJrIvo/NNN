@@ -25,6 +25,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BugLife", "BugLife\BugLife.
 		{9610ECBF-8316-4012-99A5-5C48E0CE483A} = {9610ECBF-8316-4012-99A5-5C48E0CE483A}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Life2D", "Life2D\Life2D.vcxproj", "{9000BE44-49F4-42EE-BC9A-049D45CB3E2D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9610ECBF-8316-4012-99A5-5C48E0CE483A} = {9610ECBF-8316-4012-99A5-5C48E0CE483A}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -73,6 +78,14 @@ Global
 		{EBE96435-91ED-4BCA-80CB-F1006333C1C8}.Release|x64.Build.0 = Release|x64
 		{EBE96435-91ED-4BCA-80CB-F1006333C1C8}.Release|x86.ActiveCfg = Release|Win32
 		{EBE96435-91ED-4BCA-80CB-F1006333C1C8}.Release|x86.Build.0 = Release|Win32
+		{9000BE44-49F4-42EE-BC9A-049D45CB3E2D}.Debug|x64.ActiveCfg = Debug|x64
+		{9000BE44-49F4-42EE-BC9A-049D45CB3E2D}.Debug|x64.Build.0 = Debug|x64
+		{9000BE44-49F4-42EE-BC9A-049D45CB3E2D}.Debug|x86.ActiveCfg = Debug|Win32
+		{9000BE44-49F4-42EE-BC9A-049D45CB3E2D}.Debug|x86.Build.0 = Debug|Win32
+		{9000BE44-49F4-42EE-BC9A-049D45CB3E2D}.Release|x64.ActiveCfg = Release|x64
+		{9000BE44-49F4-42EE-BC9A-049D45CB3E2D}.Release|x64.Build.0 = Release|x64
+		{9000BE44-49F4-42EE-BC9A-049D45CB3E2D}.Release|x86.ActiveCfg = Release|Win32
+		{9000BE44-49F4-42EE-BC9A-049D45CB3E2D}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
