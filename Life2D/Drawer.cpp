@@ -84,10 +84,10 @@ namespace life2d
 		auto c2d = _getPos2d(_mouse);
 		_w._pointMasses[0].pos = c2d;
 		_w._pointMasses[0].prv = c2d;
-		for (auto& p : _w._planes)
-			p.draw(_img, _size, _offset, _scale, _coeff);
 		for (auto& l : _w._links)
 			l.draw(_img, _size, _offset, _scale, _coeff, _w._pointMasses.data());
+		for (auto& p : _w._planes)
+			p.draw(_img, _size, _offset, _scale, _coeff);
 		for (auto& p : _w._polygons)
 			p.draw(_img, _size, _offset, _scale, _coeff, _w._pointMasses.data());
 		closestPM = -1;
@@ -102,10 +102,10 @@ namespace life2d
 		}
 		for (int i = 0; i < _w._pointMasses.size(); ++i) {
 			auto& pm = _w._pointMasses[i];
-			pm.draw(_img, _size, _offset, _scale, _coeff, grabbedPM == -1 && i == closestPM);
+			pm.draw(_img, _size, _offset, _scale, _coeff, grabbedPM == i || (grabbedPM == -1 && i == closestPM));
 		}
 		if (grabbedPM > 0) {
-			_w._links[0] = { 0, (size_t)grabbedPM, 0.0f, 0.5f, 0.0f};
+			_w._links[0] = { 0, (size_t)grabbedPM, 0.0f, 0.25f, 0.0f};
 		} else {
 			_w._links[0] = { 0, 0, 0.0f, 0.0, 0.0f };
 		}

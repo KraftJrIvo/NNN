@@ -1,4 +1,4 @@
-#include "types.h"
+﻿#include "types.h"
 
 #include <algorithm>
 
@@ -95,10 +95,64 @@ namespace life2d {
 			return;
 		cv::Point2f p1 = coeff * scale * pms[id1].pos + offset + (size / 2.0f);
 		cv::Point2f p2 = coeff * scale * pms[id2].pos + offset + (size / 2.0f);
-		float redcoeff = std::clamp((float)cv::norm(pms[id1].pos - pms[id2].pos) / length - 1.0f, 0.0f, 1.0f);
-		uchar nonred = floor((1.0f - fabs(redcoeff)) * 255.0f);
-		int thickness = int(floor(2.5f + 2.5f * redcoeff));
-		cv::line(img, p1, p2, CV_RGB(255, nonred, nonred), thickness);
+		float redcoeff = std::clamp((float)cv::norm(pms[id1].pos - pms[id2].pos) / length, 0.0f, 2.0f) - 1.0f;
+		uchar nonred = floor((1.0f - fabs(redcoeff)) * 50.0f);
+		int thickness = 1 + int(floor(2.0f - 2.0f * redcoeff));
+		cv::line(img, p1, p2, CV_RGB(50.0f + fabs(redcoeff) * 205.0f, nonred, nonred), thickness);
+		if (collideable) {
+			auto dir = pms[id2].pos - pms[id1].pos;
+			auto angle = atan2(dir.y, dir.x) - 3.14159f / 2.0f;
+			p1 = coeff * scale * (pms[id1].pos + pms[id1].radius * cv::Point2f(cos(angle), sin(angle))) + offset + (size / 2.0f);
+			p2 = coeff * scale * (pms[id2].pos + pms[id2].radius * cv::Point2f(cos(angle), sin(angle))) + offset + (size / 2.0f);
+			cv::line(img, p1, p2, CV_RGB(255, 255, 255));
+			angle = atan2(dir.y, dir.x) + 3.14159f / 2.0f;
+			p1 = coeff * scale * (pms[id1].pos + pms[id1].radius * cv::Point2f(cos(angle), sin(angle))) + offset + (size / 2.0f);
+			p2 = coeff * scale * (pms[id2].pos + pms[id2].radius * cv::Point2f(cos(angle), sin(angle))) + offset + (size / 2.0f);
+			cv::line(img, p1, p2, CV_RGB(255, 255, 255));
+		}
+	}
+
+	void PointMassLink::collide(PointMass& pm, PointMass* pms) {
+		if (!collideable || !pm.collideable)
+			return;
+		auto& pm1 = pms[id1]; 
+		auto& pm2 = pms[id2];
+		if (&pm1 == &pm || (&pm2 == &pm))
+			return;
+		if (pm1.fixed && pm2.fixed && pm.fixed)
+			return;
+		float sumass = (pm1.mass + pm2.mass);
+		const float mr1 = pm1.fixed ? 1.0f : pm2.fixed ? 0.0f : (pm1.mass / sumass);
+		auto mr2 = 1.0f - mr1;
+		auto d = (pm2.pos - pm1.pos);
+		auto l = cv::norm(d);
+		auto dir = d / l;
+		auto angle = atan2(dir.y, dir.x) - 3.14159f / 2.0f;
+		auto c = (pms[id1].pos + d * 0.5);
+		auto d2 = pm.pos - c;
+		auto c_dist = cv::norm((pm.pos - pm.radius * d2 / cv::norm(d2)) - c);
+		if (c_dist < l * 0.5f) {
+			auto col = closestPointOnLine(pm1.pos, pm2.pos, pm.pos);
+			auto progr = cv::norm(col - pm1.pos) / l;
+			auto radius = pm1.radius + (pm2.radius - pm1.radius) * progr;
+			const float response_coef = 0.75f;
+			auto v = col - pm.pos;
+			float dist2 = v.x * v.x + v.y * v.y;
+			float min_dist = radius + pm.radius;
+			if (dist2 < min_dist * min_dist) {
+				const float dist = sqrt(dist2);
+				auto n = v / dist;
+				float sumass2 = sumass + pm.mass;
+				float mr1_ = (pm1.fixed && pm2.fixed) ? 1.0f : pm.fixed ? 0.0f : (sumass / sumass2);
+				float mr2_ = 1.0f - mr1;
+				const float delta = 0.5f * response_coef * (dist - min_dist);
+				if (!pm1.fixed || !pm2.fixed) {
+					pm1.pos -= n * mr2 * mr2_ * (1.0f - progr) * delta;
+					pm2.pos -= n * mr1 * mr2_ * progr * delta;
+				}
+				if (!pm.fixed) pm.pos += n * mr1_ * delta;
+			}
+		}
 	}
 
 	void Plane::update(double dt) {

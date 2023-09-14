@@ -38,8 +38,10 @@ namespace life2d {
 		float length;
 		float stiffness;
 		float dampening;
+		bool collideable;
 
 		void constrain(PointMass* pms, double dt);
+		void collide(PointMass& pm, PointMass* pms);
 		void draw(cv::Mat img, const cv::Point2f& size, const cv::Point2f& offset, float scale, float coeff, PointMass* pms);
 	};
 

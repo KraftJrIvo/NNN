@@ -21,32 +21,48 @@ namespace life2d {
 		_addPointMass({ {1.0f, 0.0f}, 1.0f, false, true });
 		_addPointMass({ {1.0f, 1.0f}, 1.0f, false, true });
 		_addPointMass({ {0.0f, 1.0f}, 1.0f, false, true });
-		_addLink({ 1, 2, 10.0f, 1.0f, 0.0f });
-		_addLink({ 2, 3, 10.0f, 1.0f, 0.0f });
-		_addLink({ 3, 4, 10.0f, 1.0f, 0.0f });
-		_addLink({ 4, 1, 10.0f, 1.0f, 0.0f });
-		_addLink({ 1, 3, sqrt(2.0f) * 10.0f, 1.0f, 0.0f });
-		_addLink({ 2, 4, sqrt(2.0f) * 10.0f, 1.0f, 0.0f });
+		_addLink({ 1, 2, 10.0f, 1.0f, 0.0f, true});
+		_addLink({ 2, 3, 10.0f, 1.0f, 0.0f, true });
+		_addLink({ 3, 4, 10.0f, 1.0f, 0.0f, true });
+		_addLink({ 4, 1, 10.0f, 1.0f, 0.0f, false });
+		_addLink({ 1, 3, sqrt(2.0f) * 10.0f, 1.0f, 0.0f, false });
+		_addLink({ 2, 4, sqrt(2.0f) * 10.0f, 1.0f, 0.0f, false });
 		
 		_addPointMass({ {0.0f, 0.0f}, 1.0f, false, true });
 		_addPointMass({ {1.0f, 0.0f}, 1.0f, false, true });
 		_addPointMass({ {1.0f, 1.0f}, 1.0f, false, true });
 		_addPointMass({ {0.0f, 1.0f}, 1.0f, false, true });
-		_addLink({ 5, 6, 3.0f, 0.5f, 0.0f });
-		_addLink({ 6, 7, 3.0f, 0.5f, 0.0f });
-		_addLink({ 7, 8, 3.0f, 0.5f, 0.0f });
-		_addLink({ 8, 5, 3.0f, 0.5f, 0.0f });
-		_addLink({ 5, 7, sqrt(2.0f) * 3.0f, 0.5f, 0.0f });
-		_addLink({ 6, 8, sqrt(2.0f) * 3.0f, 0.5f, 0.0f });
+		_addLink({ 5, 6, 3.0f, 0.5f, 0.0f, true });
+		_addLink({ 6, 7, 3.0f, 0.5f, 0.0f, true });
+		_addLink({ 7, 8, 3.0f, 0.5f, 0.0f, true });
+		_addLink({ 8, 5, 3.0f, 0.5f, 0.0f, true });
+		_addLink({ 5, 7, sqrt(2.0f) * 3.0f, 0.5f, 0.0f, false });
+		_addLink({ 6, 8, sqrt(2.0f) * 3.0f, 0.5f, 0.0f, false });
 
 		for (int i = 0; i < 100; ++i) {
 			float r1 = L2D_RAND_FLOAT * 2.0f - 1.0;
 			float r2 = L2D_RAND_FLOAT * 2.0f - 1.0;
-			float r3 = L2D_RAND_FLOAT * 2.9f + 0.1;
+			float r3 = L2D_RAND_FLOAT * 0.9f + 0.1;
 			cv::Point2f pt = { size.width / 2.0f + r1 * 50.0f, r2 * 50.0f };
 			_addPointMass({ pt, r3, false, true });
 		}
 		_addPointMass({ { size.width / 2.0f, 0.0f }, 10.0f, false, true });
+
+		int n = 10;
+		for (int i = 0; i < n; ++i) {
+			cv::Point2f pt = { i * 6.0f, 0.0f };
+			auto id = _addPointMass({ pt, 0.5f, false, true });
+			if (i != n - 1) _addLink({ id, id + 1, 6.0f, 1.0f, 0.0f, false });
+		}
+
+		auto id = _addPointMass({ {0.0f, -10.0f}, 2.0f, false, true });
+		_addPointMass({ {5.0f, -10.0f}, 3.0f, false, true });
+		_addPointMass({ {10.0f, -10.0f}, 2.0f, false, true });
+		_addLink({ id, id + 1, 5.0f, 1.0f, 0.0f, true });
+		_addLink({ id + 1, id + 2, 5.0f, 1.0f, 0.0f, true });
+		_addLink({ id, id + 2, 10.0f, 1.0f, 0.0f, false });
+		_addLink({ id, id + 2, 10.0f, 1.0f, 0.0f, false });
+		_addLink({ id, id + 2, 10.0f, 1.0f, 0.0f, false });
 	}
 
 	size_t World::_addPlane(const Plane& p) {
@@ -77,7 +93,8 @@ namespace life2d {
 
 		lock();
 		for (int s = 0; s < SUB_STEPS; ++s) {
-			for (auto& l : _links) l.constrain(_pointMasses.data(), subdt);
+			for (auto& l : _links) 
+				l.constrain(_pointMasses.data(), subdt);
 			for (int i = 0; i < _pointMasses.size(); ++i) {
 				auto& p1 = _pointMasses[i];
 				p1.applyForce({ 0.0f, 1.0f }, 300.0f);
@@ -85,6 +102,8 @@ namespace life2d {
 					auto& p = _planes[j];
 					p1.collide(p);
 				}
+				for (auto& l : _links) 
+					l.collide(p1, _pointMasses.data());
 				for (int j = 0; j < _pointMasses.size(); ++j) {
 					if (i == j) continue;
 					auto& p2 = _pointMasses[j];
