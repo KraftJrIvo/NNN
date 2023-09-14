@@ -25,6 +25,9 @@ namespace life2d
 		cv::Point2f _size;
 		float _pixPerMeter;
 
+		int closestPM = -1;
+		int grabbedPM = -1;
+
 		cv::Mat _img;
 		std::pair<cv::Point3f, cv::Point3f> _bounds;
 

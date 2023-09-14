@@ -83,18 +83,37 @@ namespace life2d
 		_w.lock();
 		auto c2d = _getPos2d(_mouse);
 		_w._pointMasses[0].pos = c2d;
+		_w._pointMasses[0].prv = c2d;
 		for (auto& p : _w._planes)
 			p.draw(_img, _size, _offset, _scale, _coeff);
-		for (auto& pm : _w._pointMasses)
-			pm.draw(_img, _size, _offset, _scale, _coeff);
 		for (auto& l : _w._links)
 			l.draw(_img, _size, _offset, _scale, _coeff, _w._pointMasses.data());
 		for (auto& p : _w._polygons)
 			p.draw(_img, _size, _offset, _scale, _coeff, _w._pointMasses.data());
+		closestPM = -1;
+		float minDist = INFINITY;
+		for (int i = 0; i < _w._pointMasses.size(); ++i) {
+			auto& pm = _w._pointMasses[i];
+			auto dist = cv::norm(c2d - pm.pos);
+			if (dist > 0.0f && dist < std::max(pm.radius, 5.0f) && dist < minDist) {
+				closestPM = i;
+				minDist = dist;
+			}
+		}
+		for (int i = 0; i < _w._pointMasses.size(); ++i) {
+			auto& pm = _w._pointMasses[i];
+			pm.draw(_img, _size, _offset, _scale, _coeff, grabbedPM == -1 && i == closestPM);
+		}
+		if (grabbedPM > 0) {
+			_w._links[0] = { 0, (size_t)grabbedPM, 0.0f, 0.5f, 0.0f};
+		} else {
+			_w._links[0] = { 0, 0, 0.0f, 0.0, 0.0f };
+		}
 		_w.unlock();
 
 		auto onMouse = [](int event, int x, int y, int flags, void* _data) {
 			static bool lmb = false;
+			static bool rmb = false;
 
 			((Drawer*)_data)->_mouse.x = x;
 			((Drawer*)_data)->_mouse.y = y;
@@ -102,15 +121,13 @@ namespace life2d
 			static cv::Point2f lastPos = { (float)x, (float)y };
 			static cv::Point2f lastOffset = ((Drawer*)_data)->_offset;
 
-			if (event == cv::EVENT_LBUTTONDOWN && !lmb) {
+			if (event == cv::EVENT_RBUTTONDOWN && !rmb) {
 				lastPos = { (float)x, (float)y };
 				lastOffset = ((Drawer*)_data)->_offset;
 			}
 
-			static bool rmb = false;
-			if (event == cv::EVENT_RBUTTONDOWN) rmb = true;
-			if (event == cv::EVENT_RBUTTONUP && rmb) {
-				rmb = false;
+			if (event == cv::EVENT_LBUTTONDOWN && !lmb) {
+				((Drawer*)_data)->grabbedPM = ((Drawer*)_data)->closestPM;
 			}
 
 			if (event == cv::EVENT_LBUTTONUP && lmb) {
@@ -120,12 +137,17 @@ namespace life2d
 
 			if (event == cv::EVENT_LBUTTONDOWN) lmb = true;
 			if (event == cv::EVENT_LBUTTONUP) {
+				((Drawer*)_data)->grabbedPM = -1;
 				lmb = false;
-
 			}
+			if (event == cv::EVENT_RBUTTONDOWN) rmb = true;
+			if (event == cv::EVENT_RBUTTONUP && rmb) {
+				rmb = false;
+			}
+
 			((Drawer*)_data)->_lclick = (event == cv::EVENT_LBUTTONUP);
 
-			if (lmb) {
+			if (rmb) {
 				((Drawer*)_data)->_offset = lastOffset - (lastPos - cv::Point2f(x, y));
 			}
 

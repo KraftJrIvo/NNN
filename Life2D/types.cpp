@@ -13,7 +13,7 @@ namespace life2d {
 		vel = pos - prv;
 		prv = pos;
 		pos += vel + acc * dt * dt;
-		acc = {};
+		acc = { 0.0f, 0.0f };
 	}
 
 	cv::Point2f closestPointOnLine(const cv::Point2f& p1, const cv::Point2f& p2, const cv::Point2f& p) {
@@ -54,28 +54,48 @@ namespace life2d {
 			const float dist = sqrt(dist2);
 			auto n = v / dist;
 			const float sumass = mass + pm.mass;
-			const float mr1 = mass / sumass;
-			const float mr2 = pm.mass / sumass;
+			const float mr1 = fixed ? 1.0f : pm.fixed ? 0.0f : (mass / sumass);
+			const float mr2 = 1.0f - mr1;
 			const float delta = 0.5f * response_coef * (dist - min_dist);
-			if (!fixed) pos -= n * mr1 * delta;
-			if (!pm.fixed) pm.pos += n * mr2 * delta;
+			if (!fixed) pos -= n * mr2 * delta;
+			if (!pm.fixed) pm.pos += n * mr1 * delta;
 		}
 	}
 
-	void PointMass::draw(cv::Mat img, const cv::Point2f& size, const cv::Point2f& offset, float scale, float coeff) {
+	void PointMass::draw(cv::Mat img, const cv::Point2f& size, const cv::Point2f& offset, float scale, float coeff, bool selected) {
 		cv::Point2f p = coeff * scale * pos + offset + (size / 2.0f);
-		cv::circle(img, p, radius * coeff * scale, cv::Scalar(255, 255, 255));
-		cv::circle(img, p, 1, cv::Scalar(255, 255, 255), -1);
+		auto col = selected ? cv::Scalar(0, 255, 255) : cv::Scalar(255, 255, 255);
+		cv::circle(img, p, radius * coeff * scale, col);
+		cv::circle(img, p, 1, col, -1);
 	}
 
-	void PointMassLink::constrain(PointMass* pms) {
+	void PointMassLink::constrain(PointMass* pms, double dt) {
+		if (id1 == id2)
+			return;
+		auto& pm1 = pms[id1];
+		auto& pm2 = pms[id2];
+		const float sumass = pm1.mass + pm2.mass;
+		const float mr1 = pm1.fixed ? 1.0f : pm2.fixed ? 0.0f : (pm1.mass / sumass);
+		const float mr2 = 1.0f - mr1;
+		
+		auto d = pm2.pos - pm1.pos;
+		auto dist = cv::norm(d);
+		auto dir1 = d / dist;
+		auto dir2 = -d / dist;
+		auto v1 = pm2.pos + dir2 * length;
+		auto v2 = pm1.pos + dir1 * length;
 
+		float stifcoeff = (stiffness < 1.0f) ? (stiffness * dt * 10.0f) : 1.0f;
+		if (!pm1.fixed) pm1.pos += (v1 - pm1.pos) * mr2 * stifcoeff;
+		if (!pm2.fixed) pm2.pos += (v2 - pm2.pos) * mr1 * stifcoeff;
 	}
 
 	void PointMassLink::draw(cv::Mat img, const cv::Point2f& size, const cv::Point2f& offset, float scale, float coeff, PointMass* pms) {
+		if (length == 0.0f)
+			return;
 		cv::Point2f p1 = coeff * scale * pms[id1].pos + offset + (size / 2.0f);
 		cv::Point2f p2 = coeff * scale * pms[id2].pos + offset + (size / 2.0f);
-		float redcoeff = std::clamp((float)cv::norm(p1 - p2) / length - 1.0f, 0.0f, 1.0f);
+		float redcoeff = std::clamp((float)cv::norm(pms[id1].pos - pms[id2].pos) / length - 1.0f, 0.0f, 1.0f);
 		uchar nonred = floor((1.0f - fabs(redcoeff)) * 255.0f);
 		int thickness = int(floor(2.5f + 2.5f * redcoeff));
 		cv::line(img, p1, p2, CV_RGB(255, nonred, nonred), thickness);
