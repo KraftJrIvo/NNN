@@ -69,6 +69,22 @@ namespace life2d {
 		_addLink({ id + 4, id, 20.0f, 1.0f, 0.0f, 0.0f, false });
 		_addLink({ id + 3, id + 1, 12.0f, 1.0f, 0.0f, 0.0f, false });
 
+		n = 50;
+		float r = 5.0f;
+		float br = 0.3f;
+		cv::Point2f c = { -20.0f, -20.0f };
+		float step = (2.0f * 3.14159f) / float(n + 1);
+		float l = step * r;
+		for (int i = 0; i < n; ++i) {
+			float angle = i * step;
+			cv::Point2f pos = { c.x + r * cos(angle), c.y + r * sin(angle) };
+			auto id = _addPointMass({ pos, br, 0.5f, false, true });
+			_addLink({ id, (i != n - 1) ? (id + 1) : (id - n + 1), br * 2.0f, 1.0f, 0.5f, 0.5f, false});
+			if (i < n / 2)
+				_addLink({ id, id + n / 2, 2.0f * 2.0f * r, 0.25f, 0.5f, 0.5f, false });
+		}
+
+
 		omp_set_num_threads(8);
 	}
 
