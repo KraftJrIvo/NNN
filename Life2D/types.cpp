@@ -38,7 +38,7 @@ namespace life2d {
 		cv::Point2f p2 = p.pos + 1e2 * cv::Point2f(cos(angle - 3.14159f / 2.0f), sin(angle - 3.14159f / 2.0f));
 		auto col = closestPointOnLine(p1, p2, pos);
 		auto dist = cv::norm(col - pos);
-		pos = col + p.normal * radius;
+		pos += 0.5f * (col + p.normal * radius - pos);
 	}
 
 	void PointMass::collide(PointMass& pm) {
@@ -80,14 +80,14 @@ namespace life2d {
 		
 		auto d = pm2.pos - pm1.pos;
 		auto dist = cv::norm(d);
-		auto dir1 = d / dist;
-		auto dir2 = -d / dist;
-		auto v1 = pm2.pos + dir2 * length;
-		auto v2 = pm1.pos + dir1 * length;
+		auto dir = d / dist;
+		auto v1 = pm2.pos - dir * length;
+		auto v2 = pm1.pos + dir * length;
 
 		float stifcoeff = (stiffness < 1.0f) ? (stiffness * dt * 10.0f) : 1.0f;
-		if (!pm1.fixed) pm1.pos += (v1 - pm1.pos) * mr2 * stifcoeff;
-		if (!pm2.fixed) pm2.pos += (v2 - pm2.pos) * mr1 * stifcoeff;
+		float dampcoeff = (damping < 1.0f) ? (damping * dt * 25.0f) : 0.1f;
+		if (!pm1.fixed) pm1.pos += 0.5f * ((v1 - pm1.pos) * mr2 * stifcoeff + (pm2.vel - pm1.vel) * dampcoeff);
+		if (!pm2.fixed) pm2.pos += 0.5f * ((v2 - pm2.pos) * mr1 * stifcoeff + (pm1.vel - pm2.vel) * dampcoeff);
 	}
 
 	void PointMassLink::draw(cv::Mat img, const cv::Point2f& size, const cv::Point2f& offset, float scale, float coeff, PointMass* pms) {

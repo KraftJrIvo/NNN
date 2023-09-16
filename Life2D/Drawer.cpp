@@ -80,7 +80,6 @@ namespace life2d
 		cv::line(_img, p3, p4, cv::Scalar(100, 100, 100), 2);
 		cv::line(_img, p4, p1, cv::Scalar(100, 100, 100), 2);
 
-		_w.lock();
 		auto c2d = _getPos2d(_mouse);
 		_w._pointMasses[0].pos = c2d;
 		_w._pointMasses[0].prv = c2d;
@@ -105,11 +104,10 @@ namespace life2d
 			pm.draw(_img, _size, _offset, _scale, _coeff, grabbedPM == i || (grabbedPM == -1 && i == closestPM));
 		}
 		if (grabbedPM > 0) {
-			_w._links[0] = { 0, (size_t)grabbedPM, 0.0f, 0.25f, 0.0f};
+			_w._links[0] = { 0, (size_t)grabbedPM, 0.0f, 0.5f, 0.5f};
 		} else {
 			_w._links[0] = { 0, 0, 0.0f, 0.0, 0.0f };
 		}
-		_w.unlock();
 
 		auto onMouse = [](int event, int x, int y, int flags, void* _data) {
 			static bool lmb = false;

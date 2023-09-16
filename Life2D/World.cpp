@@ -2,6 +2,8 @@
 
 #include <chrono>
 
+#include <omp.h>
+
 #define SUB_STEPS 4
 
 namespace life2d {
@@ -28,21 +30,21 @@ namespace life2d {
 		_addLink({ 1, 3, sqrt(2.0f) * 10.0f, 1.0f, 0.0f, false });
 		_addLink({ 2, 4, sqrt(2.0f) * 10.0f, 1.0f, 0.0f, false });
 		
-		_addPointMass({ {0.0f, 0.0f}, 1.0f, false, true });
-		_addPointMass({ {1.0f, 0.0f}, 1.0f, false, true });
-		_addPointMass({ {1.0f, 1.0f}, 1.0f, false, true });
-		_addPointMass({ {0.0f, 1.0f}, 1.0f, false, true });
-		_addLink({ 5, 6, 3.0f, 0.5f, 0.0f, true });
-		_addLink({ 6, 7, 3.0f, 0.5f, 0.0f, true });
-		_addLink({ 7, 8, 3.0f, 0.5f, 0.0f, true });
-		_addLink({ 8, 5, 3.0f, 0.5f, 0.0f, true });
-		_addLink({ 5, 7, sqrt(2.0f) * 3.0f, 0.5f, 0.0f, false });
-		_addLink({ 6, 8, sqrt(2.0f) * 3.0f, 0.5f, 0.0f, false });
+		_addPointMass({ {0.0f, 0.0f}, 0.5f, false, true });
+		_addPointMass({ {1.0f, 0.0f}, 0.5f, false, true });
+		_addPointMass({ {1.0f, 1.0f}, 0.5f, false, true });
+		_addPointMass({ {0.0f, 1.0f}, 0.5f, false, true });
+		_addLink({ 5, 6, 3.0f, 0.75f, 0.1f, false });
+		_addLink({ 6, 7, 3.0f, 0.75f, 0.1f, false });
+		_addLink({ 7, 8, 3.0f, 0.75f, 0.1f, false });
+		_addLink({ 8, 5, 3.0f, 0.75f, 0.1f, false });
+		_addLink({ 5, 7, sqrt(2.0f) * 3.0f, 0.75f, 0.1f, false });
+		_addLink({ 6, 8, sqrt(2.0f) * 3.0f, 0.75f, 0.1f, false });
 
-		for (int i = 0; i < 100; ++i) {
+		for (int i = 0; i < 1000; ++i) {
 			float r1 = L2D_RAND_FLOAT * 2.0f - 1.0;
 			float r2 = L2D_RAND_FLOAT * 2.0f - 1.0;
-			float r3 = L2D_RAND_FLOAT * 0.9f + 0.1;
+			float r3 = L2D_RAND_FLOAT * 1.9f + 0.1;
 			cv::Point2f pt = { size.width / 2.0f + r1 * 50.0f, r2 * 50.0f };
 			_addPointMass({ pt, r3, false, true });
 		}
@@ -55,14 +57,19 @@ namespace life2d {
 			if (i != n - 1) _addLink({ id, id + 1, 6.0f, 1.0f, 0.0f, false });
 		}
 
-		auto id = _addPointMass({ {0.0f, -10.0f}, 2.0f, false, true });
-		_addPointMass({ {5.0f, -10.0f}, 3.0f, false, true });
-		_addPointMass({ {10.0f, -10.0f}, 2.0f, false, true });
-		_addLink({ id, id + 1, 5.0f, 1.0f, 0.0f, true });
+		auto id = _addPointMass({ {0.0f, -10.0f}, 1.0f, false, true });
+		_addPointMass({ {3.0f, -10.0f}, 2.0f, false, true });
+		_addPointMass({ {8.0f, -10.0f}, 3.0f, false, true });
+		_addPointMass({ {13.0f, -10.0f}, 2.0f, false, true });
+		_addPointMass({ {16.0f, -10.0f}, 1.0f, false, true });
+		_addLink({ id, id + 1, 3.0f, 1.0f, 0.0f, true });
 		_addLink({ id + 1, id + 2, 5.0f, 1.0f, 0.0f, true });
-		_addLink({ id, id + 2, 10.0f, 1.0f, 0.0f, false });
-		_addLink({ id, id + 2, 10.0f, 1.0f, 0.0f, false });
-		_addLink({ id, id + 2, 10.0f, 1.0f, 0.0f, false });
+		_addLink({ id + 2, id + 3, 5.0f, 1.0f, 0.0f, true });
+		_addLink({ id + 3, id + 4, 3.0f, 1.0f, 0.0f, true });
+		_addLink({ id + 4, id, 16.0f, 1.0f, 0.0f, false });
+		_addLink({ id + 3, id + 1, 10.0f, 1.0f, 0.0f, false });
+
+		omp_set_num_threads(8);
 	}
 
 	size_t World::_addPlane(const Plane& p) {
@@ -91,13 +98,13 @@ namespace life2d {
 		auto subdt = dt / SUB_STEPS;
 		_time = seconds.count();
 
-		lock();
 		for (int s = 0; s < SUB_STEPS; ++s) {
 			for (auto& l : _links) 
 				l.constrain(_pointMasses.data(), subdt);
+			#pragma omp parallel for
 			for (int i = 0; i < _pointMasses.size(); ++i) {
 				auto& p1 = _pointMasses[i];
-				p1.applyForce({ 0.0f, 1.0f }, 300.0f);
+				p1.applyForce({ 0.0f, 1.0f }, 200.0f);
 				for (int j = 0; j < _planes.size(); ++j) {
 					auto& p = _planes[j];
 					p1.collide(p);
@@ -112,6 +119,5 @@ namespace life2d {
 				p1.update(subdt);
 			}
 		}
-		unlock();
 	}
 }

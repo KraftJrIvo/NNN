@@ -37,7 +37,7 @@ namespace life2d {
 		size_t id1, id2;
 		float length;
 		float stiffness;
-		float dampening;
+		float damping;
 		bool collideable;
 
 		void constrain(PointMass* pms, double dt);
