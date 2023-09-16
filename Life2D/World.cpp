@@ -10,64 +10,64 @@ namespace life2d {
 
 	void World::generate() {
 
-		Plane p1 = { { size.width / 2.0f, 9.0f * size.height / 10.0f }, { 0.0f, -1.0f } };
-		Plane p2 = { { size.width / 4.0f, 9.0f * size.height / 10.0f }, { (float)sqrt(2) / 2.0f, -(float)sqrt(2) / 2.0f}};
-		Plane p3 = { { 3.0f * size.width / 4.0f, 9.0f * size.height / 10.0f }, { -(float)sqrt(2) / 2.0f, -(float)sqrt(2) / 2.0f} };
+		Plane p1 = { { size.width / 2.0f, 9.0f * size.height / 10.0f }, { 0.0f, -1.0f }, 1.0f };
+		Plane p2 = { { size.width / 4.0f, 9.0f * size.height / 10.0f }, { (float)sqrt(2) / 2.0f, -(float)sqrt(2) / 2.0f}, 1.0f };
+		Plane p3 = { { 3.0f * size.width / 4.0f, 9.0f * size.height / 10.0f }, { -(float)sqrt(2) / 2.0f, -(float)sqrt(2) / 2.0f}, 0.0f };
 		_addPlane(p1); _addPlane(p2); _addPlane(p3);
 
-		PointMass pm1 = { { size.width / 2.0f, size.height / 2.0f }, 0.1f, true, false };
+		PointMass pm1 = { { size.width / 2.0f, size.height / 2.0f }, 0.1f, 0.0f, true, false };
 		_addPointMass(pm1);
 		_addLink({ 0, 0, 0.0f, 0.0f, 0.0f });
 
-		_addPointMass({ {0.0f, 0.0f}, 1.0f, false, true});
-		_addPointMass({ {1.0f, 0.0f}, 1.0f, false, true });
-		_addPointMass({ {1.0f, 1.0f}, 1.0f, false, true });
-		_addPointMass({ {0.0f, 1.0f}, 1.0f, false, true });
-		_addLink({ 1, 2, 10.0f, 1.0f, 0.0f, true});
-		_addLink({ 2, 3, 10.0f, 1.0f, 0.0f, true });
-		_addLink({ 3, 4, 10.0f, 1.0f, 0.0f, true });
-		_addLink({ 4, 1, 10.0f, 1.0f, 0.0f, false });
-		_addLink({ 1, 3, sqrt(2.0f) * 10.0f, 1.0f, 0.0f, false });
-		_addLink({ 2, 4, sqrt(2.0f) * 10.0f, 1.0f, 0.0f, false });
+		_addPointMass({ {0.0f, 0.0f}, 1.0f, 1.0f, false, true});
+		_addPointMass({ {1.0f, 0.0f}, 1.0f, 1.0f, false, true });
+		_addPointMass({ {1.0f, 1.0f}, 1.0f, 1.0f, false, true });
+		_addPointMass({ {0.0f, 1.0f}, 1.0f, 1.0f, false, true });
+		_addLink({ 1, 2, 10.0f, 1.0f, 0.0f, 1.0f, true});
+		_addLink({ 2, 3, 10.0f, 1.0f, 0.0f, 1.0f, true });
+		_addLink({ 3, 4, 10.0f, 1.0f, 0.0f, 1.0f, true });
+		_addLink({ 4, 1, 10.0f, 1.0f, 0.0f, 0.0f, false });
+		_addLink({ 1, 3, sqrt(2.0f) * 10.0f, 1.0f, 0.0f, 0.0f, false });
+		_addLink({ 2, 4, sqrt(2.0f) * 10.0f, 1.0f, 0.0f, 0.0f, false });
 		
-		_addPointMass({ {0.0f, 0.0f}, 0.5f, false, true });
-		_addPointMass({ {1.0f, 0.0f}, 0.5f, false, true });
-		_addPointMass({ {1.0f, 1.0f}, 0.5f, false, true });
-		_addPointMass({ {0.0f, 1.0f}, 0.5f, false, true });
-		_addLink({ 5, 6, 3.0f, 0.75f, 0.1f, false });
-		_addLink({ 6, 7, 3.0f, 0.75f, 0.1f, false });
-		_addLink({ 7, 8, 3.0f, 0.75f, 0.1f, false });
-		_addLink({ 8, 5, 3.0f, 0.75f, 0.1f, false });
-		_addLink({ 5, 7, sqrt(2.0f) * 3.0f, 0.75f, 0.1f, false });
-		_addLink({ 6, 8, sqrt(2.0f) * 3.0f, 0.75f, 0.1f, false });
+		_addPointMass({ {0.0f, 0.0f}, 0.5f, 0.5f, false, true });
+		_addPointMass({ {1.0f, 0.0f}, 0.5f, 0.5f, false, true });
+		_addPointMass({ {1.0f, 1.0f}, 0.5f, 0.5f, false, true });
+		_addPointMass({ {0.0f, 1.0f}, 0.5f, 0.5f, false, true });
+		_addLink({ 5, 6, 3.0f, 0.75f, 0.1f, 0.5f, false });
+		_addLink({ 6, 7, 3.0f, 0.75f, 0.1f, 0.5f, false });
+		_addLink({ 7, 8, 3.0f, 0.75f, 0.1f, 0.5f, false });
+		_addLink({ 8, 5, 3.0f, 0.75f, 0.1f, 0.5f, false });
+		_addLink({ 5, 7, sqrt(2.0f) * 3.0f, 0.75f, 0.1f, 0.0f, false });
+		_addLink({ 6, 8, sqrt(2.0f) * 3.0f, 0.75f, 0.1f, 0.0f, false });
 
 		for (int i = 0; i < 1000; ++i) {
 			float r1 = L2D_RAND_FLOAT * 2.0f - 1.0;
 			float r2 = L2D_RAND_FLOAT * 2.0f - 1.0;
 			float r3 = L2D_RAND_FLOAT * 1.9f + 0.1;
 			cv::Point2f pt = { size.width / 2.0f + r1 * 50.0f, r2 * 50.0f };
-			_addPointMass({ pt, r3, false, true });
+			_addPointMass({ pt, r3, 0.0f, false, true });
 		}
-		_addPointMass({ { size.width / 2.0f, 0.0f }, 10.0f, false, true });
+		_addPointMass({ { size.width / 2.0f, 0.0f }, 10.0f, 0.0f, false, true });
 
 		int n = 10;
 		for (int i = 0; i < n; ++i) {
 			cv::Point2f pt = { i * 6.0f, 0.0f };
-			auto id = _addPointMass({ pt, 0.5f, false, true });
-			if (i != n - 1) _addLink({ id, id + 1, 6.0f, 1.0f, 0.0f, false });
+			auto id = _addPointMass({ pt, 0.5f, 0.1f, false, true });
+			if (i != n - 1) _addLink({ id, id + 1, 6.0f, 1.0f, 0.0f, 0.0f, false });
 		}
 
-		auto id = _addPointMass({ {0.0f, -10.0f}, 1.0f, false, true });
-		_addPointMass({ {3.0f, -10.0f}, 2.0f, false, true });
-		_addPointMass({ {8.0f, -10.0f}, 3.0f, false, true });
-		_addPointMass({ {13.0f, -10.0f}, 2.0f, false, true });
-		_addPointMass({ {16.0f, -10.0f}, 1.0f, false, true });
-		_addLink({ id, id + 1, 3.0f, 1.0f, 0.0f, true });
-		_addLink({ id + 1, id + 2, 5.0f, 1.0f, 0.0f, true });
-		_addLink({ id + 2, id + 3, 5.0f, 1.0f, 0.0f, true });
-		_addLink({ id + 3, id + 4, 3.0f, 1.0f, 0.0f, true });
-		_addLink({ id + 4, id, 16.0f, 1.0f, 0.0f, false });
-		_addLink({ id + 3, id + 1, 10.0f, 1.0f, 0.0f, false });
+		auto id = _addPointMass({ {0.0f, -10.0f}, 1.0f, 1.0f, false, true });
+		_addPointMass({ {3.0f, -10.0f}, 2.0f, 1.0f, false, true });
+		_addPointMass({ {8.0f, -10.0f}, 3.0f, 1.0f, false, true });
+		_addPointMass({ {13.0f, -10.0f}, 2.0f, 1.0f, false, true });
+		_addPointMass({ {16.0f, -10.0f}, 1.0f, 1.0f, false, true });
+		_addLink({ id, id + 1, 3.0f, 1.0f, 0.0f, 1.0f, true });
+		_addLink({ id + 1, id + 2, 5.0f, 1.0f, 0.0f, 1.0f, true });
+		_addLink({ id + 2, id + 3, 5.0f, 1.0f, 0.0f, 1.0f, true });
+		_addLink({ id + 3, id + 4, 3.0f, 1.0f, 0.0f, 1.0f, true });
+		_addLink({ id + 4, id, 16.0f, 1.0f, 0.0f, 0.0f, false });
+		_addLink({ id + 3, id + 1, 10.0f, 1.0f, 0.0f, 0.0f, false });
 
 		omp_set_num_threads(8);
 	}

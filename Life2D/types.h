@@ -9,6 +9,7 @@ namespace life2d {
 	struct Plane {
 		cv::Point2f pos;
 		cv::Point2f normal;
+		float friction;
 
 		void update(double dt);
 		void draw(cv::Mat img, const cv::Point2f& size, const cv::Point2f& offset, float scale, float coeff);
@@ -16,12 +17,12 @@ namespace life2d {
 
 	struct PointMass {
 		cv::Point2f pos;
-		float radius, mass;
+		float radius, friction, mass;
 		bool fixed, collideable;
 		cv::Point2f prv, vel, acc;
 
-		PointMass(const cv::Point2f& pos, float radius, bool fixed, bool collideable) : 
-			pos(pos), radius(radius), fixed(fixed), collideable(collideable),
+		PointMass(const cv::Point2f& pos, float radius, float friction, bool fixed, bool collideable) : 
+			pos(pos), radius(radius), friction(friction), fixed(fixed), collideable(collideable),
 			prv(pos), vel({0.0f, 0.0f}), acc({0.0f, 0.0f}), mass(3.14159f * radius * radius)
 		{ }
 
@@ -38,8 +39,9 @@ namespace life2d {
 		float length;
 		float stiffness;
 		float damping;
+		float friction;
 		bool collideable;
-
+		
 		void constrain(PointMass* pms, double dt);
 		void collide(PointMass& pm, PointMass* pms);
 		void draw(cv::Mat img, const cv::Point2f& size, const cv::Point2f& offset, float scale, float coeff, PointMass* pms);

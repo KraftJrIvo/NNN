@@ -38,7 +38,12 @@ namespace life2d {
 		cv::Point2f p2 = p.pos + 1e2 * cv::Point2f(cos(angle - 3.14159f / 2.0f), sin(angle - 3.14159f / 2.0f));
 		auto col = closestPointOnLine(p1, p2, pos);
 		auto dist = cv::norm(col - pos);
-		pos += 0.5f * (col + p.normal * radius - pos);
+
+		auto fricoeff = friction * p.friction;
+		auto dir = p2 - pos;
+		auto paral = 2.0f * (dir / cv::norm(dir)) * (vel.dot(dir) / cv::norm(dir));
+		
+		pos += 0.5f * ((col + p.normal * radius - pos) - paral * fricoeff);
 	}
 
 	void PointMass::collide(PointMass& pm) {
@@ -146,11 +151,16 @@ namespace life2d {
 				float mr1_ = (pm1.fixed && pm2.fixed) ? 1.0f : pm.fixed ? 0.0f : (sumass / sumass2);
 				float mr2_ = 1.0f - mr1;
 				const float delta = 0.5f * response_coef * (dist - min_dist);
+
+				auto fricoeff = friction * pm.friction;
+				auto relvel = pm.vel - (pm1.vel + (pm2.vel - pm1.vel) * progr);
+				auto paral = 2.0f * dir * (relvel.dot(d) / l);
+
 				if (!pm1.fixed || !pm2.fixed) {
-					pm1.pos -= n * mr2 * mr2_ * (1.0f - progr) * delta;
-					pm2.pos -= n * mr1 * mr2_ * progr * delta;
+					pm1.pos -= (n * mr2 * mr2_ * (1.0f - progr)) * delta;
+					pm2.pos -= (n * mr1 * mr2_ * progr) * delta;
 				}
-				if (!pm.fixed) pm.pos += n * mr1_ * delta;
+				if (!pm.fixed) pm.pos += n * mr1_ * delta - 0.5f * mr1_ * paral * fricoeff;
 			}
 		}
 	}
