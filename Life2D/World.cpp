@@ -48,7 +48,7 @@ namespace life2d {
 			cv::Point2f pt = { size.width / 2.0f + r1 * 50.0f, r2 * 50.0f };
 			_addPointMass({ pt, r3, 0.0f, false, true });
 		}
-		_addPointMass({ { size.width / 2.0f, 0.0f }, 10.0f, 0.0f, false, true });
+		_addPointMass({ { size.width / 2.0f, -50.0f }, 10.0f, 0.0f, false, true });
 
 		int n = 10;
 		for (int i = 0; i < n; ++i) {
@@ -62,12 +62,12 @@ namespace life2d {
 		_addPointMass({ {8.0f, -10.0f}, 3.0f, 1.0f, false, true });
 		_addPointMass({ {13.0f, -10.0f}, 2.0f, 1.0f, false, true });
 		_addPointMass({ {16.0f, -10.0f}, 1.0f, 1.0f, false, true });
-		_addLink({ id, id + 1, 3.0f, 1.0f, 0.0f, 1.0f, true });
-		_addLink({ id + 1, id + 2, 5.0f, 1.0f, 0.0f, 1.0f, true });
-		_addLink({ id + 2, id + 3, 5.0f, 1.0f, 0.0f, 1.0f, true });
-		_addLink({ id + 3, id + 4, 3.0f, 1.0f, 0.0f, 1.0f, true });
-		_addLink({ id + 4, id, 16.0f, 1.0f, 0.0f, 0.0f, false });
-		_addLink({ id + 3, id + 1, 10.0f, 1.0f, 0.0f, 0.0f, false });
+		_addLink({ id, id + 1, 4.0f, 1.0f, 0.0f, 1.0f, true });
+		_addLink({ id + 1, id + 2, 6.0f, 1.0f, 0.0f, 1.0f, true });
+		_addLink({ id + 2, id + 3, 6.0f, 1.0f, 0.0f, 1.0f, true });
+		_addLink({ id + 3, id + 4, 4.0f, 1.0f, 0.0f, 1.0f, true });
+		_addLink({ id + 4, id, 20.0f, 1.0f, 0.0f, 0.0f, false });
+		_addLink({ id + 3, id + 1, 12.0f, 1.0f, 0.0f, 0.0f, false });
 
 		omp_set_num_threads(8);
 	}

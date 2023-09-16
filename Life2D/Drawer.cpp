@@ -75,10 +75,10 @@ namespace life2d
 		cv::Point2f p2 = _getScaledProj({ (float)_w.size.width, 0 });
 		cv::Point2f p3 = _getScaledProj({ (float)_w.size.width, (float)_w.size.height });
 		cv::Point2f p4 = _getScaledProj({ 0, (float)_w.size.height });
-		cv::line(_img, p1, p2, cv::Scalar(100, 100, 100), 2);
-		cv::line(_img, p2, p3, cv::Scalar(100, 100, 100), 2);
-		cv::line(_img, p3, p4, cv::Scalar(100, 100, 100), 2);
-		cv::line(_img, p4, p1, cv::Scalar(100, 100, 100), 2);
+		//cv::line(_img, p1, p2, cv::Scalar(100, 100, 100), 2);
+		//cv::line(_img, p2, p3, cv::Scalar(100, 100, 100), 2);
+		//cv::line(_img, p3, p4, cv::Scalar(100, 100, 100), 2);
+		//cv::line(_img, p4, p1, cv::Scalar(100, 100, 100), 2);
 
 		auto c2d = _getPos2d(_mouse);
 		_w._pointMasses[0].pos = c2d;

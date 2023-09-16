@@ -40,10 +40,10 @@ namespace life2d {
 		auto dist = cv::norm(col - pos);
 
 		auto fricoeff = friction * p.friction;
-		auto dir = p2 - pos;
-		auto paral = 2.0f * (dir / cv::norm(dir)) * (vel.dot(dir) / cv::norm(dir));
+		auto dir = (p2 - pos) / cv::norm(p2 - pos);
+		auto paral = dir * vel.dot(dir);
 		
-		pos += 0.5f * ((col + p.normal * radius - pos) - paral * fricoeff);
+		pos += 0.5f * ((col + p.normal * radius - pos)) - paral * fricoeff;
 	}
 
 	void PointMass::collide(PointMass& pm) {
@@ -52,7 +52,7 @@ namespace life2d {
 		if (fixed && pm.fixed)
 			return;
 		const float response_coef = 0.75f;
-		auto v = pos - pm.pos;
+		auto v = pm.pos - pos;
 		float dist2 = v.x * v.x + v.y * v.y;
 		float min_dist = radius + pm.radius;
 		if (dist2 < min_dist * min_dist) {
@@ -62,8 +62,15 @@ namespace life2d {
 			const float mr1 = fixed ? 1.0f : pm.fixed ? 0.0f : (mass / sumass);
 			const float mr2 = 1.0f - mr1;
 			const float delta = 0.5f * response_coef * (dist - min_dist);
-			if (!fixed) pos -= n * mr2 * delta;
-			if (!pm.fixed) pm.pos += n * mr1 * delta;
+
+			auto angle = atan2(v.y, v.x);
+			auto dir = cv::Point2f(cos(angle + 3.14159f / 2.0f), sin(angle + 3.14159f / 2.0f));
+			auto fricoeff = friction * pm.friction;
+			auto relvel = pm.vel - vel;
+			auto paral = dir * (relvel.dot(dir));
+
+			if (!fixed) pos += n * mr2 * delta;
+			if (!pm.fixed) pm.pos -= n * mr1 * delta + paral * mr1 * fricoeff;
 		}
 	}
 
@@ -90,7 +97,7 @@ namespace life2d {
 		auto v2 = pm1.pos + dir * length;
 
 		float stifcoeff = (stiffness < 1.0f) ? (stiffness * dt * 10.0f) : 1.0f;
-		float dampcoeff = (damping < 1.0f) ? (damping * dt * 25.0f) : 0.1f;
+		float dampcoeff = (damping < 1.0f) ? (damping * dt * 25.0f) : 0.0f;
 		if (!pm1.fixed) pm1.pos += 0.5f * ((v1 - pm1.pos) * mr2 * stifcoeff + (pm2.vel - pm1.vel) * dampcoeff);
 		if (!pm2.fixed) pm2.pos += 0.5f * ((v2 - pm2.pos) * mr1 * stifcoeff + (pm1.vel - pm2.vel) * dampcoeff);
 	}
@@ -152,15 +159,15 @@ namespace life2d {
 				float mr2_ = 1.0f - mr1;
 				const float delta = 0.5f * response_coef * (dist - min_dist);
 
-				auto fricoeff = friction * pm.friction;
+				auto fricoeff = friction* pm.friction;
 				auto relvel = pm.vel - (pm1.vel + (pm2.vel - pm1.vel) * progr);
-				auto paral = 2.0f * dir * (relvel.dot(d) / l);
+				auto paral = dir * relvel.dot(dir);
 
 				if (!pm1.fixed || !pm2.fixed) {
 					pm1.pos -= (n * mr2 * mr2_ * (1.0f - progr)) * delta;
 					pm2.pos -= (n * mr1 * mr2_ * progr) * delta;
 				}
-				if (!pm.fixed) pm.pos += n * mr1_ * delta - 0.5f * mr1_ * paral * fricoeff;
+				if (!pm.fixed) pm.pos += n * mr1_ * delta - mr1_ * paral * fricoeff;
 			}
 		}
 	}
